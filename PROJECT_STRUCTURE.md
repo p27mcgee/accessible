@@ -1,12 +1,12 @@
 # Project Structure
 
-This document provides an overview of the Star Songs project structure and how it maps to the original Java JPA project.
+This document provides an overview of the Accessible project structure, including the Python FastAPI backend and Next.js frontend.
 
 ## Directory Structure
 
 ```
 accessible/
-├── api/                          # Python FastAPI microservice
+├── api/                          # Python FastAPI backend
 │   ├── app/
 │   │   ├── __init__.py
 │   │   ├── main.py              # FastAPI application entry point
@@ -21,6 +21,25 @@ accessible/
 │   ├── requirements.txt         # Python dependencies
 │   └── README.md               # API documentation
 │
+├── nextui/                      # Next.js frontend
+│   ├── app/
+│   │   ├── layout.tsx          # Root layout
+│   │   ├── page.tsx            # Home page
+│   │   └── globals.css         # Global styles
+│   ├── components/
+│   │   ├── SongList.tsx        # Server Component for data fetching
+│   │   ├── SongTable.tsx       # Client Component for table rendering
+│   │   └── LoadingSpinner.tsx  # Loading state component
+│   ├── lib/
+│   │   └── api.ts              # API client
+│   ├── types/
+│   │   └── index.ts            # TypeScript type definitions
+│   ├── __tests__/              # Vitest test files
+│   ├── Dockerfile              # Multi-stage container build
+│   ├── next.config.ts          # Next.js configuration
+│   ├── package.json            # Node dependencies
+│   └── .env.local              # Local environment variables
+│
 ├── sql/                         # Database scripts
 │   ├── init_db.sql             # Database creation
 │   ├── schema.sql              # Table definitions
@@ -32,6 +51,7 @@ accessible/
 ├── .env.example               # Environment variables template
 ├── .gitignore                 # Git ignore patterns
 ├── README.md                  # Main documentation
+├── GETTING_STARTED.md         # Quick start guide
 └── PROJECT_STRUCTURE.md       # This file
 ```
 
@@ -50,21 +70,26 @@ accessible/
 | `jpa/ArtistRepository.java` | SQLAlchemy Session (via `get_db()`) | Data access |
 | `jpa/SongRepository.java` | SQLAlchemy Session (via `get_db()`) | Data access |
 
-## Technology Stack Comparison
+## Technology Stack
 
-| Component | Java/Spring Boot | Python/FastAPI |
-|-----------|-----------------|----------------|
-| **Framework** | Spring Boot | FastAPI |
-| **ORM** | JPA/Hibernate | SQLAlchemy |
-| **Validation** | Bean Validation | Pydantic |
-| **DI/IoC** | Spring @Autowired | FastAPI Depends() |
-| **API Docs** | SpringDoc/Swagger | Built-in OpenAPI |
-| **Server** | Embedded Tomcat | Uvicorn (ASGI) |
-| **Database Driver** | JDBC | pyodbc |
+| Component | Technology | Purpose |
+|-----------|-----------|---------|
+| **Frontend Framework** | Next.js 16 | React-based web framework with App Router |
+| **UI Library** | React 19 | Server and Client Components |
+| **Styling** | TailwindCSS 4 | Utility-first CSS framework |
+| **Type Safety** | TypeScript 5 | Static type checking |
+| **Backend Framework** | FastAPI | Modern Python web framework |
+| **ORM** | SQLAlchemy 2.0 | Python database toolkit |
+| **Validation** | Pydantic | Data validation and serialization |
+| **API Docs** | OpenAPI/Swagger | Built-in API documentation |
+| **Backend Server** | Uvicorn | ASGI server |
+| **Database** | SQL Server 2022 | Relational database |
+| **Database Driver** | pyodbc | ODBC driver for SQL Server |
+| **Containerization** | Docker Compose | Multi-container orchestration |
 
 ## API Endpoints
 
-Both implementations provide identical REST endpoints:
+The FastAPI backend provides the following REST endpoints:
 
 ### Artists API (`/v1/artists`)
 - `GET /v1/artists` - List all artists
@@ -121,15 +146,27 @@ The application uses environment variables for configuration:
 
 ### SQL Server (`sqlserver`)
 - **Image**: mcr.microsoft.com/mssql/server:2022-latest
+- **Container**: sqlserver-dev
 - **Port**: 1433
 - **Platform**: linux/amd64 (uses Rosetta 2 on Apple Silicon)
 - **Health Check**: SQL query verification every 10s
+- **Volume**: sqlserver-data (persistent storage)
 
-### API Service (`api`)
+### API Service (`fastDataApi`)
 - **Build**: Local Dockerfile in `./api`
+- **Container**: accessible-fast-data-api
 - **Port**: 8000
 - **Depends On**: sqlserver (with health check)
 - **Auto-restart**: unless-stopped
+- **Environment**: Database connection details
+
+### Frontend Service (`nextui`)
+- **Build**: Multi-stage Dockerfile in `./nextui`
+- **Container**: accessible-nextui
+- **Port**: 80 (maps to container port 3000)
+- **Depends On**: fastDataApi
+- **Auto-restart**: unless-stopped
+- **Environment**: API URL configuration
 
 ## Key Differences from Java Implementation
 
@@ -154,10 +191,17 @@ The application uses environment variables for configuration:
 
 1. **Start services**: `docker compose up -d`
 2. **Initialize database**: `./init-database.sh`
-3. **Access API docs**: http://localhost:8000/swagger-ui.html
-4. **Make changes**: Edit files in `api/app/`
-5. **Rebuild**: `docker compose up -d --build api`
-6. **View logs**: `docker compose logs -f api`
+3. **Access services**:
+   - Frontend: http://localhost
+   - API docs: http://localhost:8000/swagger-ui.html
+4. **Make changes**: Edit files in `api/app/` or `nextui/`
+5. **Rebuild**:
+   - Backend: `docker compose up -d --build fastDataApi`
+   - Frontend: `docker compose up -d --build nextui`
+6. **View logs**:
+   - All: `docker compose logs -f`
+   - Backend: `docker compose logs -f fastDataApi`
+   - Frontend: `docker compose logs -f nextui`
 
 ## Testing
 
@@ -195,25 +239,46 @@ curl http://localhost:8000/v1/songs
 - Change default SQL Server password
 - Configure CORS properly for production
 - Use environment variables for sensitive data
-- Enable HTTPS/TLS
+- Enable HTTPS/TLS for both frontend and API
+- Implement authentication and authorization
+- Use secrets management (e.g., Azure Key Vault, AWS Secrets Manager)
 
 ### Performance
 - Configure connection pooling in SQLAlchemy
 - Add database indexes for frequently queried fields
 - Use async endpoints for high concurrency
+- Enable Next.js caching and optimization features
+- Consider CDN for static assets
 
 ### Monitoring
-- Add structured logging
+- Add structured logging for both frontend and backend
 - Implement health check endpoints
-- Set up application metrics
+- Set up application metrics and monitoring
+- Configure error tracking (e.g., Sentry)
 
 ## Future Enhancements
 
-- [ ] Add authentication/authorization
+### Backend
+- [ ] Add authentication/authorization (JWT tokens)
 - [ ] Implement pagination for list endpoints
-- [ ] Add filtering and sorting
-- [ ] Create automated tests
+- [ ] Add filtering and sorting parameters
+- [ ] Create automated pytest tests
 - [ ] Add database migrations (Alembic)
-- [ ] Implement caching
+- [ ] Implement Redis caching
 - [ ] Add rate limiting
+
+### Frontend
+- [ ] Add authentication UI (login/logout)
+- [ ] Implement CRUD forms for artists and songs
+- [ ] Add search and filter functionality
+- [ ] Create responsive mobile design
+- [ ] Add data visualization (charts/graphs)
+- [ ] Implement client-side caching
+- [ ] Add Vitest component tests
+
+### DevOps
 - [ ] Create CI/CD pipeline
+- [ ] Add Docker health checks
+- [ ] Set up staging environment
+- [ ] Implement database backups
+- [ ] Add monitoring and alerting

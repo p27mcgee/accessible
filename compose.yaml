@@ -23,11 +23,11 @@ services:
       retries: 10
       start_period: 10s
 
-  api:
+  fastDataApi:
     build:
       context: ./api
       dockerfile: Dockerfile
-    container_name: starsongs-api
+    container_name: accessible-fast-data-api
     environment:
       - DB_SERVER=sqlserver
       - DB_PORT=1433
@@ -41,6 +41,21 @@ services:
     depends_on:
       sqlserver:
         condition: service_healthy
+    restart: unless-stopped
+
+  nextui:
+    build:
+      context: ./nextui
+      dockerfile: Dockerfile
+    container_name: accessible-nextui
+    environment:
+      - NEXT_PUBLIC_SONGDATA_API_URL=http://fastDataApi:8000
+    ports:
+      - "80:3000"
+    networks:
+      - app-network
+    depends_on:
+      - fastDataApi
     restart: unless-stopped
 
 volumes:

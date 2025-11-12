@@ -1,13 +1,14 @@
-# Star Songs - SQL Server + Python API Development Environment
+# Accessible - Full Stack Development Environment
 
-Docker Compose setup for running SQL Server on macOS (including Apple Silicon) with a Python FastAPI microservice.
+Docker Compose setup for running SQL Server on macOS (including Apple Silicon) with a Python FastAPI backend and Next.js frontend.
 
 ## Services
 
 - **SQL Server 2022** - Database server (port 1433)
-- **Star Songs API** - Python FastAPI microservice (port 8000)
+- **fastDataApi** - Python FastAPI backend (port 8000)
+- **nextui** - Next.js frontend (port 80)
 
-The API provides CRUD endpoints compatible with the Java JPA project from [star-songs](https://github.com/mcgeecahill/star-songs).
+The API provides CRUD endpoints for artists and songs, with a modern React-based user interface.
 
 ## Quick Start
 
@@ -23,6 +24,9 @@ docker compose up -d
 ```
 
 ### 2. Access the Services
+
+**Frontend:**
+- Web UI: http://localhost (port 80)
 
 **SQL Server:**
 - Server: `localhost,1433`
@@ -110,6 +114,12 @@ docker compose down
 
 ### View logs
 ```bash
+# All services
+docker compose logs -f
+
+# Individual services
+docker compose logs -f nextui
+docker compose logs -f fastDataApi
 docker compose logs -f sqlserver
 ```
 
@@ -156,6 +166,7 @@ docker compose logs sqlserver
 
 ## Next Steps
 
-- Connect your web UI application to `localhost:1433`
-- Create your application database
-- Build your web interface (consider Budibase, React, or Python Flask)
+- Customize the Next.js frontend in the `nextui/` directory
+- Add authentication/authorization
+- Implement additional features and endpoints
+- Deploy to production environment

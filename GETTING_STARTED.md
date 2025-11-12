@@ -1,12 +1,13 @@
-# Getting Started with Star Songs API
+# Getting Started with Accessible
 
 ## Summary
 
-This project provides a **Python FastAPI microservice** with **SQL Server backend** that replicates the REST API from the Java JPA [star-songs](https://github.com/mcgeecahill/star-songs) project.
+This project provides a **full-stack application** with **SQL Server backend**, **Python FastAPI API**, and **Next.js frontend**.
 
 **What's included:**
 - SQL Server 2022 running in Docker (with Rosetta 2 emulation on Apple Silicon)
-- Python FastAPI microservice with CRUD endpoints
+- Python FastAPI backend with CRUD endpoints (fastDataApi)
+- Next.js frontend with React Server Components (nextui)
 - Database schema and sample data
 - Swagger/OpenAPI documentation
 
@@ -47,6 +48,9 @@ EOF
 ```
 
 ### 3. Access the Services
+
+**Frontend:**
+- Web UI: http://localhost (port 80)
 
 **API Endpoints:**
 - Base URL: http://localhost:8000
@@ -176,10 +180,9 @@ This Python API is 100% compatible with the Java Spring Boot version:
 # All services
 docker compose logs -f
 
-# Just the API
-docker compose logs -f api
-
-# Just SQL Server
+# Individual services
+docker compose logs -f nextui
+docker compose logs -f fastDataApi
 docker compose logs -f sqlserver
 ```
 
@@ -188,8 +191,10 @@ docker compose logs -f sqlserver
 # Restart everything
 docker compose restart
 
-# Restart just the API
-docker compose restart api
+# Restart individual services
+docker compose restart nextui
+docker compose restart fastDataApi
+docker compose restart sqlserver
 ```
 
 ### Stop Services
@@ -222,7 +227,7 @@ docker exec -it sqlserver-dev /opt/mssql-tools18/bin/sqlcmd \
 
 ```
 accessible/
-├── api/                    # Python FastAPI microservice
+├── api/                    # Python FastAPI backend
 │   ├── app/
 │   │   ├── main.py        # FastAPI application
 │   │   ├── database.py    # Database connection
@@ -231,12 +236,19 @@ accessible/
 │   │   └── routers/       # API endpoints
 │   ├── Dockerfile
 │   └── requirements.txt
-├── sql/                   # Database scripts
-│   ├── init_db.sql       # Create database
-│   ├── schema.sql        # Create tables
-│   └── seed_data.sql     # Sample data
-├── compose.yaml          # Docker Compose config
-└── init-database.sh      # Database setup script
+├── nextui/                # Next.js frontend
+│   ├── app/              # Next.js App Router
+│   ├── components/       # React components
+│   ├── lib/             # API client and utilities
+│   ├── types/           # TypeScript types
+│   ├── Dockerfile
+│   └── package.json
+├── sql/                  # Database scripts
+│   ├── init_db.sql      # Create database
+│   ├── schema.sql       # Create tables
+│   └── seed_data.sql    # Sample data
+├── compose.yaml         # Docker Compose config
+└── init-database.sh     # Database setup script
 ```
 
 ## Troubleshooting
@@ -244,10 +256,10 @@ accessible/
 ### API won't start
 ```bash
 # Check logs
-docker compose logs api
+docker compose logs fastDataApi
 
 # Rebuild
-docker compose up -d --build api
+docker compose up -d --build fastDataApi
 ```
 
 ### Can't connect to database
@@ -274,19 +286,15 @@ If port 8000 or 1433 is already in use, edit `compose.yaml` to change the port m
 
 ## Next Steps
 
-- **Add authentication**: Implement JWT or OAuth2
+- **Add authentication**: Implement JWT or OAuth2 in both API and frontend
 - **Add pagination**: Implement pagination for list endpoints
-- **Add filtering**: Add query parameters for filtering
-- **Write tests**: Add pytest tests for the API
-- **Deploy**: Deploy to a cloud provider
+- **Add filtering**: Add query parameters and search functionality
+- **Write tests**: Add pytest tests for the API and Vitest tests for frontend
+- **Deploy**: Deploy to a cloud provider (AWS, Azure, or Vercel)
 
 ## Additional Resources
 
 - **FastAPI Documentation**: https://fastapi.tiangolo.com
+- **Next.js Documentation**: https://nextjs.org/docs
 - **SQLAlchemy Documentation**: https://docs.sqlalchemy.org
 - **SQL Server Documentation**: https://docs.microsoft.com/en-us/sql/
-- **Original Java Project**: https://github.com/mcgeecahill/star-songs
-
-## License
-
-Based on the star-songs project by McGee Cahill
