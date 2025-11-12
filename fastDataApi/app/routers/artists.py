@@ -1,6 +1,5 @@
 """
 Artist REST API endpoints
-Corresponds to ArtistRestControllerV1.java
 
 API endpoints:
 - GET    /v1/artists      - List all artists
@@ -27,7 +26,6 @@ router = APIRouter(
 def get_all_artists(db: Session = Depends(get_db)):
     """
     Get all artists
-    Corresponds to: ArtistRestControllerV1.all()
     """
     artists = db.query(Artist).all()
     return artists
@@ -37,7 +35,6 @@ def get_all_artists(db: Session = Depends(get_db)):
 def get_artist(id: int, db: Session = Depends(get_db)):
     """
     Get one artist by ID
-    Corresponds to: ArtistRestControllerV1.one(Integer id)
     """
     artist = db.query(Artist).filter(Artist.id == id).first()
     if artist is None:
@@ -52,7 +49,6 @@ def get_artist(id: int, db: Session = Depends(get_db)):
 def create_artist(artist: ArtistCreate, db: Session = Depends(get_db)):
     """
     Create a new artist
-    Corresponds to: ArtistRestControllerV1.newArtist(ArtistDto newArtist)
     """
     db_artist = Artist(name=artist.name)
     db.add(db_artist)
@@ -65,12 +61,11 @@ def create_artist(artist: ArtistCreate, db: Session = Depends(get_db)):
 def update_artist(id: int, artist: ArtistUpdate, db: Session = Depends(get_db)):
     """
     Update an existing artist or create if not exists
-    Corresponds to: ArtistRestControllerV1.replaceArtist(ArtistDto newArtist, Integer id)
     """
     db_artist = db.query(Artist).filter(Artist.id == id).first()
 
     if db_artist is None:
-        # Create new artist with specified ID (mimics Java behavior)
+        # Create new artist with specified ID
         db_artist = Artist(id=id, name=artist.name)
         db.add(db_artist)
     else:
@@ -86,7 +81,6 @@ def update_artist(id: int, artist: ArtistUpdate, db: Session = Depends(get_db)):
 def delete_artist(id: int, db: Session = Depends(get_db)):
     """
     Delete an artist
-    Corresponds to: ArtistRestControllerV1.deleteArtist(Integer id)
     """
     db_artist = db.query(Artist).filter(Artist.id == id).first()
     if db_artist is None:

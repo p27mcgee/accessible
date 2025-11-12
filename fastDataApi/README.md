@@ -1,30 +1,26 @@
-# Star Songs API - Python Microservice
+# fastDataApi - Python Microservice
 
-Python FastAPI microservice providing CRUD access to SQL Server, compatible with the Java JPA project from [star-songs](https://github.com/mcgeecahill/star-songs).
-
-## API Compatibility
-
-This microservice provides identical REST API endpoints to the Java Spring Boot application:
+Python FastAPI microservice providing CRUD access to SQL Server.
 
 ### Artist Endpoints
 
-| Method | Endpoint | Description | Java Equivalent |
-|--------|----------|-------------|-----------------|
-| GET | `/v1/artists` | List all artists | `ArtistRestControllerV1.all()` |
-| GET | `/v1/artists/{id}` | Get one artist | `ArtistRestControllerV1.one()` |
-| POST | `/v1/artists` | Create new artist | `ArtistRestControllerV1.newArtist()` |
-| PUT | `/v1/artists/{id}` | Update artist | `ArtistRestControllerV1.replaceArtist()` |
-| DELETE | `/v1/artists/{id}` | Delete artist | `ArtistRestControllerV1.deleteArtist()` |
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/v1/artists` | List all artists |
+| GET | `/v1/artists/{id}` | Get one artist |
+| POST | `/v1/artists` | Create new artist |
+| PUT | `/v1/artists/{id}` | Update artist |
+| DELETE | `/v1/artists/{id}` | Delete artist |
 
 ### Song Endpoints
 
-| Method | Endpoint | Description | Java Equivalent |
-|--------|----------|-------------|-----------------|
-| GET | `/v1/songs` | List all songs | `SongRestControllerV1.all()` |
-| GET | `/v1/songs/{id}` | Get one song | `SongRestControllerV1.one()` |
-| POST | `/v1/songs` | Create new song | `SongRestControllerV1.newSong()` |
-| PUT | `/v1/songs/{id}` | Update song | `SongRestControllerV1.replaceSong()` |
-| DELETE | `/v1/songs/{id}` | Delete song | `SongRestControllerV1.deleteSong()` |
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/v1/songs` | List all songs |
+| GET | `/v1/songs/{id}` | Get one song |
+| POST | `/v1/songs` | Create new song |
+| PUT | `/v1/songs/{id}` | Update song |
+| DELETE | `/v1/songs/{id}` | Delete song |
 
 ## Data Model
 

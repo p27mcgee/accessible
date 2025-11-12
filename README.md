@@ -55,16 +55,15 @@ curl -X POST http://localhost:8000/v1/artists \
   -d '{"name": "New Artist"}'
 ```
 
-### Option 2: Architecture-Specific Setup
+### Alternative: Setup Script
 
-Auto-detect your CPU architecture and configure accordingly:
+Use the setup script to create your `.env` file:
 
 ```bash
 ./setup-env.sh
-docker compose -f compose.arch-specific.yaml up -d
 ```
 
-This will create a `.env` file with the appropriate SQL Server image for your system.
+This will create a `.env` file with SQL Server 2022 configured. All images use amd64 architecture regardless of your host CPU (works via Rosetta 2 on Apple Silicon).
 
 ## Architecture Support
 

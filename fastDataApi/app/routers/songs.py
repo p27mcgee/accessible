@@ -1,6 +1,5 @@
 """
 Song REST API endpoints
-Corresponds to SongRestControllerV1.java
 
 API endpoints:
 - GET    /v1/songs      - List all songs
@@ -42,7 +41,6 @@ def convert_song_to_dto(song: Song) -> SongDto:
 def get_all_songs(db: Session = Depends(get_db)):
     """
     Get all songs
-    Corresponds to: SongRestControllerV1.all()
     """
     songs = db.query(Song).all()
     return [convert_song_to_dto(song) for song in songs]
@@ -52,7 +50,6 @@ def get_all_songs(db: Session = Depends(get_db)):
 def get_song(id: int, db: Session = Depends(get_db)):
     """
     Get one song by ID
-    Corresponds to: SongRestControllerV1.one(Integer id)
     """
     song = db.query(Song).filter(Song.id == id).first()
     if song is None:
@@ -67,7 +64,6 @@ def get_song(id: int, db: Session = Depends(get_db)):
 def create_song(song: SongCreate, db: Session = Depends(get_db)):
     """
     Create a new song
-    Corresponds to: SongRestControllerV1.newSong(SongDto newSong)
     """
     # Validate artist exists if artistId is provided
     if song.artistId is not None:
@@ -96,7 +92,6 @@ def create_song(song: SongCreate, db: Session = Depends(get_db)):
 def update_song(id: int, song: SongUpdate, db: Session = Depends(get_db)):
     """
     Update an existing song or create if not exists
-    Corresponds to: SongRestControllerV1.replaceSong(SongDto newSong, Integer id)
     """
     # Validate artist exists if artistId is provided
     if song.artistId is not None:
@@ -137,7 +132,6 @@ def update_song(id: int, song: SongUpdate, db: Session = Depends(get_db)):
 def delete_song(id: int, db: Session = Depends(get_db)):
     """
     Delete a song
-    Corresponds to: SongRestControllerV1.deleteSong(Integer id)
     """
     db_song = db.query(Song).filter(Song.id == id).first()
     if db_song is None:
