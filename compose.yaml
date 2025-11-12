@@ -25,7 +25,7 @@ services:
 
   fastDataApi:
     build:
-      context: ./api
+      context: ./fastDataApi
       dockerfile: Dockerfile
     container_name: accessible-fast-data-api
     environment:

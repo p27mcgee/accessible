@@ -227,7 +227,7 @@ docker exec -it sqlserver-dev /opt/mssql-tools18/bin/sqlcmd \
 
 ```
 accessible/
-├── api/                    # Python FastAPI backend
+├── fastDataApi/            # Python FastAPI backend
 │   ├── app/
 │   │   ├── main.py        # FastAPI application
 │   │   ├── database.py    # Database connection

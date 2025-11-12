@@ -6,7 +6,7 @@ This document provides an overview of the Accessible project structure, includin
 
 ```
 accessible/
-├── api/                          # Python FastAPI backend
+├── fastDataApi/                  # Python FastAPI backend
 │   ├── app/
 │   │   ├── __init__.py
 │   │   ├── main.py              # FastAPI application entry point
@@ -153,7 +153,7 @@ The application uses environment variables for configuration:
 - **Volume**: sqlserver-data (persistent storage)
 
 ### API Service (`fastDataApi`)
-- **Build**: Local Dockerfile in `./api`
+- **Build**: Local Dockerfile in `./fastDataApi`
 - **Container**: accessible-fast-data-api
 - **Port**: 8000
 - **Depends On**: sqlserver (with health check)
@@ -194,7 +194,7 @@ The application uses environment variables for configuration:
 3. **Access services**:
    - Frontend: http://localhost
    - API docs: http://localhost:8000/swagger-ui.html
-4. **Make changes**: Edit files in `api/app/` or `nextui/`
+4. **Make changes**: Edit files in `fastDataApi/app/` or `nextui/`
 5. **Rebuild**:
    - Backend: `docker compose up -d --build fastDataApi`
    - Frontend: `docker compose up -d --build nextui`

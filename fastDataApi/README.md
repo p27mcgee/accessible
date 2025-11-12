@@ -59,7 +59,7 @@ This microservice provides identical REST API endpoints to the Java Spring Boot 
 ## Project Structure
 
 ```
-api/
+fastDataApi/
 ├── app/
 │   ├── __init__.py
 │   ├── main.py           # FastAPI application entry point
