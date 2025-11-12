@@ -12,7 +12,7 @@ export default async function SongList() {
     const songs = await getSongs();
 
     // Get unique artist IDs
-    const artistIds = Array.from(new Set(songs.map((song) => song.artistId)));
+    const artistIds = Array.from(new Set(songs.map((song) => song.artist_id)));
 
     // Fetch all artists
     const artistMap = await getArtists(artistIds);
@@ -20,7 +20,7 @@ export default async function SongList() {
     // Combine songs with artist names
     const songsWithArtists: SongWithArtist[] = songs.map((song) => ({
       ...song,
-      artistName: artistMap.get(song.artistId)?.name || 'Unknown Artist',
+      artist_name: artistMap.get(song.artist_id)?.name || 'Unknown Artist',
     }));
 
     return <SongTable songs={songsWithArtists} />;

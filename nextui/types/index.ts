@@ -1,12 +1,12 @@
 /**
- * Type definitions for Star Songs application
+ * Type definitions for Accessible application
  */
 
 export interface Song {
   id: number;
   title: string;
-  artistId: number;
-  releaseDate: string;
+  artist_id: number;
+  release_date: string;
   url: string;
   distance?: number;
 }
@@ -17,5 +17,5 @@ export interface Artist {
 }
 
 export interface SongWithArtist extends Song {
-  artistName: string;
+  artist_name: string;
 }

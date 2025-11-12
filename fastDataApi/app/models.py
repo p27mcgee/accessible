@@ -1,5 +1,5 @@
 """
-SQLAlchemy ORM models matching the JPA entities from star-songs project
+SQLAlchemy ORM models for the Accessible API
 """
 from sqlalchemy import Column, Integer, String, Float, Date, ForeignKey
 from sqlalchemy.orm import relationship
@@ -7,9 +7,7 @@ from app.database import Base
 
 
 class Artist(Base):
-    """
-    Artist entity - corresponds to com.mcgeecahill.starsongs.songdata.domain.Artist
-    """
+    """Artist entity representing a music artist"""
     __tablename__ = "Artist"
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
@@ -23,9 +21,7 @@ class Artist(Base):
 
 
 class Song(Base):
-    """
-    Song entity - corresponds to com.mcgeecahill.starsongs.songdata.domain.Song
-    """
+    """Song entity representing a music song with space-themed distance"""
     __tablename__ = "Song"
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)

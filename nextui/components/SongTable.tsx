@@ -37,7 +37,7 @@ export default function SongTable({ songs }: SongTableProps) {
                     {song.title}
                   </a>
                 </td>
-                <td className="px-6 py-4 text-[#FFFACD] text-lg">{song.artistName}</td>
+                <td className="px-6 py-4 text-[#FFFACD] text-lg">{song.artist_name}</td>
               </tr>
             ))}
           </tbody>

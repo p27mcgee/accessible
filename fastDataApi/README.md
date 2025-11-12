@@ -175,30 +175,6 @@ This project uses direct SQL scripts for schema management. To modify the schema
 2. Run the init script to recreate the database
 3. Update SQLAlchemy models in `app/models.py`
 
-## Mapping Between Java and Python
-
-### Entities (Domain Models)
-- `Artist.java` → `models.Artist` (SQLAlchemy)
-- `Song.java` → `models.Song` (SQLAlchemy)
-
-### DTOs
-- `ArtistDto.java` → `schemas.ArtistDto` (Pydantic)
-- `SongDto.java` → `schemas.SongDto` (Pydantic)
-
-### Controllers
-- `ArtistRestControllerV1.java` → `routers.artists`
-- `SongRestControllerV1.java` → `routers.songs`
-
-### Key Differences
-
-| Aspect | Java/Spring Boot | Python/FastAPI |
-|--------|-----------------|----------------|
-| ORM | JPA/Hibernate | SQLAlchemy |
-| Validation | Bean Validation | Pydantic |
-| DI | @Autowired | Depends() |
-| Routing | @GetMapping, etc. | @router.get(), etc. |
-| DTO Mapping | ModelMapper | Pydantic model_validate() |
-
 ## License
 
 Based on the star-songs project by McGee Cahill

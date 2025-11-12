@@ -8,17 +8,17 @@ describe('SongTable', () => {
     {
       id: 1,
       title: 'Fly Me to the Moon',
-      artistId: 1,
-      artistName: 'Frank Sinatra',
-      releaseDate: '1964-01-01',
+      artist_id: 1,
+      artist_name: 'Frank Sinatra',
+      release_date: '1964-01-01',
       url: 'https://www.youtube.com/watch?v=ZEcqHA7dbwM',
     },
     {
       id: 2,
       title: 'Rocket Man',
-      artistId: 2,
-      artistName: 'Elton John',
-      releaseDate: '1972-04-14',
+      artist_id: 2,
+      artist_name: 'Elton John',
+      release_date: '1972-04-14',
       url: 'https://www.youtube.com/watch?v=DtVBCG6ThDk',
     },
   ];

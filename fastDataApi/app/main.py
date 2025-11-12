@@ -15,7 +15,7 @@ app = FastAPI(
     title="fastDataApi",
     description="Python microservice for CRUD access to SQL Server",
     version="1.0.0",
-    docs_url="/swagger-ui.html",  # Match Spring Boot default
+    docs_url="/swagger-ui.html",
     redoc_url="/api-docs"
 )
 

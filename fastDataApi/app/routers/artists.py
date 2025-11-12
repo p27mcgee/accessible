@@ -13,8 +13,8 @@ from sqlalchemy.orm import Session
 from typing import List
 
 from app.database import get_db
-from app.models import Artist
-from app.schemas import ArtistDto, ArtistCreate, ArtistUpdate
+from app.models import Artist as ArtistModel
+from app.schemas import Artist, ArtistCreate, ArtistUpdate
 
 router = APIRouter(
     prefix="/v1/artists",
@@ -22,21 +22,17 @@ router = APIRouter(
 )
 
 
-@router.get("", response_model=List[ArtistDto])
+@router.get("", response_model=List[Artist])
 def get_all_artists(db: Session = Depends(get_db)):
-    """
-    Get all artists
-    """
-    artists = db.query(Artist).all()
+    """Get all artists"""
+    artists = db.query(ArtistModel).all()
     return artists
 
 
-@router.get("/{id}", response_model=ArtistDto)
+@router.get("/{id}", response_model=Artist)
 def get_artist(id: int, db: Session = Depends(get_db)):
-    """
-    Get one artist by ID
-    """
-    artist = db.query(Artist).filter(Artist.id == id).first()
+    """Get one artist by ID"""
+    artist = db.query(ArtistModel).filter(ArtistModel.id == id).first()
     if artist is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -45,28 +41,24 @@ def get_artist(id: int, db: Session = Depends(get_db)):
     return artist
 
 
-@router.post("", response_model=ArtistDto, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=Artist, status_code=status.HTTP_201_CREATED)
 def create_artist(artist: ArtistCreate, db: Session = Depends(get_db)):
-    """
-    Create a new artist
-    """
-    db_artist = Artist(name=artist.name)
+    """Create a new artist"""
+    db_artist = ArtistModel(name=artist.name)
     db.add(db_artist)
     db.commit()
     db.refresh(db_artist)
     return db_artist
 
 
-@router.put("/{id}", response_model=ArtistDto)
+@router.put("/{id}", response_model=Artist)
 def update_artist(id: int, artist: ArtistUpdate, db: Session = Depends(get_db)):
-    """
-    Update an existing artist or create if not exists
-    """
-    db_artist = db.query(Artist).filter(Artist.id == id).first()
+    """Update an existing artist or create if not exists"""
+    db_artist = db.query(ArtistModel).filter(ArtistModel.id == id).first()
 
     if db_artist is None:
         # Create new artist with specified ID
-        db_artist = Artist(id=id, name=artist.name)
+        db_artist = ArtistModel(id=id, name=artist.name)
         db.add(db_artist)
     else:
         # Update existing artist
@@ -79,10 +71,8 @@ def update_artist(id: int, artist: ArtistUpdate, db: Session = Depends(get_db)):
 
 @router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_artist(id: int, db: Session = Depends(get_db)):
-    """
-    Delete an artist
-    """
-    db_artist = db.query(Artist).filter(Artist.id == id).first()
+    """Delete an artist"""
+    db_artist = db.query(ArtistModel).filter(ArtistModel.id == id).first()
     if db_artist is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
