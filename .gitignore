@@ -1,0 +1,29 @@
+# Environment variables (may contain passwords)
+.env
+
+# Database backups
+*.tar.gz
+*.bak
+*.bacpac
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+
+# macOS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
