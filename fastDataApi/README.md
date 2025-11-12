@@ -177,4 +177,4 @@ This project uses direct SQL scripts for schema management. To modify the schema
 
 ## License
 
-Based on the star-songs project by McGee Cahill
+Apache 2 License
