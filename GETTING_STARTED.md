@@ -96,8 +96,8 @@ curl http://localhost:8000/v1/songs
 [
     {
         "title": "Space Oddity",
-        "artistId": 1,
-        "releaseDate": "1969-07-11",
+        "artist_id": 1,
+        "release_date": "1969-07-11",
         "url": "https://www.youtube.com/watch?v=iYYRH4apXDo",
         "distance": 238900.0,
         "id": 1
@@ -126,8 +126,8 @@ curl -X POST http://localhost:8000/v1/songs \
   -H "Content-Type: application/json" \
   -d '{
     "title": "Stairway to Heaven",
-    "artistId": 6,
-    "releaseDate": "1971-11-08",
+    "artist_id": 6,
+    "release_date": "1971-11-08",
     "url": "https://www.youtube.com/watch?v=QkF3oxziUI4",
     "distance": 100.0
   }'
@@ -155,23 +155,6 @@ The easiest way to test the API is through the Swagger UI:
 4. Click "Try it out" to test the endpoint
 5. Fill in parameters and click "Execute"
 6. View the response below
-
-## API Compatibility with Java Version
-
-This Python API is 100% compatible with the Java Spring Boot version:
-
-| Endpoint | Method | Java Equivalent |
-|----------|--------|-----------------|
-| `/v1/artists` | GET | `ArtistRestControllerV1.all()` |
-| `/v1/artists/{id}` | GET | `ArtistRestControllerV1.one()` |
-| `/v1/artists` | POST | `ArtistRestControllerV1.newArtist()` |
-| `/v1/artists/{id}` | PUT | `ArtistRestControllerV1.replaceArtist()` |
-| `/v1/artists/{id}` | DELETE | `ArtistRestControllerV1.deleteArtist()` |
-| `/v1/songs` | GET | `SongRestControllerV1.all()` |
-| `/v1/songs/{id}` | GET | `SongRestControllerV1.one()` |
-| `/v1/songs` | POST | `SongRestControllerV1.newSong()` |
-| `/v1/songs/{id}` | PUT | `SongRestControllerV1.replaceSong()` |
-| `/v1/songs/{id}` | DELETE | `SongRestControllerV1.deleteSong()` |
 
 ## Managing the Environment
 
@@ -232,7 +215,7 @@ accessible/
 │   │   ├── main.py        # FastAPI application
 │   │   ├── database.py    # Database connection
 │   │   ├── models.py      # SQLAlchemy ORM models
-│   │   ├── schemas.py     # Pydantic DTOs
+│   │   ├── schemas.py     # Pydantic schemas
 │   │   └── routers/       # API endpoints
 │   ├── Dockerfile
 │   └── requirements.txt

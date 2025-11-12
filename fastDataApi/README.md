@@ -1,30 +1,26 @@
-# Star Songs API - Python Microservice
+# fastDataApi - Python Microservice
 
-Python FastAPI microservice providing CRUD access to SQL Server, compatible with the Java JPA project from [star-songs](https://github.com/mcgeecahill/star-songs).
-
-## API Compatibility
-
-This microservice provides identical REST API endpoints to the Java Spring Boot application:
+Python FastAPI microservice providing CRUD access to SQL Server.
 
 ### Artist Endpoints
 
-| Method | Endpoint | Description | Java Equivalent |
-|--------|----------|-------------|-----------------|
-| GET | `/v1/artists` | List all artists | `ArtistRestControllerV1.all()` |
-| GET | `/v1/artists/{id}` | Get one artist | `ArtistRestControllerV1.one()` |
-| POST | `/v1/artists` | Create new artist | `ArtistRestControllerV1.newArtist()` |
-| PUT | `/v1/artists/{id}` | Update artist | `ArtistRestControllerV1.replaceArtist()` |
-| DELETE | `/v1/artists/{id}` | Delete artist | `ArtistRestControllerV1.deleteArtist()` |
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/v1/artists` | List all artists |
+| GET | `/v1/artists/{id}` | Get one artist |
+| POST | `/v1/artists` | Create new artist |
+| PUT | `/v1/artists/{id}` | Update artist |
+| DELETE | `/v1/artists/{id}` | Delete artist |
 
 ### Song Endpoints
 
-| Method | Endpoint | Description | Java Equivalent |
-|--------|----------|-------------|-----------------|
-| GET | `/v1/songs` | List all songs | `SongRestControllerV1.all()` |
-| GET | `/v1/songs/{id}` | Get one song | `SongRestControllerV1.one()` |
-| POST | `/v1/songs` | Create new song | `SongRestControllerV1.newSong()` |
-| PUT | `/v1/songs/{id}` | Update song | `SongRestControllerV1.replaceSong()` |
-| DELETE | `/v1/songs/{id}` | Delete song | `SongRestControllerV1.deleteSong()` |
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/v1/songs` | List all songs |
+| GET | `/v1/songs/{id}` | Get one song |
+| POST | `/v1/songs` | Create new song |
+| PUT | `/v1/songs/{id}` | Update song |
+| DELETE | `/v1/songs/{id}` | Delete song |
 
 ## Data Model
 
@@ -179,30 +175,6 @@ This project uses direct SQL scripts for schema management. To modify the schema
 2. Run the init script to recreate the database
 3. Update SQLAlchemy models in `app/models.py`
 
-## Mapping Between Java and Python
-
-### Entities (Domain Models)
-- `Artist.java` → `models.Artist` (SQLAlchemy)
-- `Song.java` → `models.Song` (SQLAlchemy)
-
-### DTOs
-- `ArtistDto.java` → `schemas.ArtistDto` (Pydantic)
-- `SongDto.java` → `schemas.SongDto` (Pydantic)
-
-### Controllers
-- `ArtistRestControllerV1.java` → `routers.artists`
-- `SongRestControllerV1.java` → `routers.songs`
-
-### Key Differences
-
-| Aspect | Java/Spring Boot | Python/FastAPI |
-|--------|-----------------|----------------|
-| ORM | JPA/Hibernate | SQLAlchemy |
-| Validation | Bean Validation | Pydantic |
-| DI | @Autowired | Depends() |
-| Routing | @GetMapping, etc. | @router.get(), etc. |
-| DTO Mapping | ModelMapper | Pydantic model_validate() |
-
 ## License
 
-Based on the star-songs project by McGee Cahill
+Apache 2 License

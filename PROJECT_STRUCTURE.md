@@ -12,7 +12,7 @@ accessible/
 │   │   ├── main.py              # FastAPI application entry point
 │   │   ├── database.py          # Database connection management
 │   │   ├── models.py            # SQLAlchemy ORM models
-│   │   ├── schemas.py           # Pydantic schemas (DTOs)
+│   │   ├── schemas.py           # Pydantic schemas
 │   │   └── routers/
 │   │       ├── __init__.py
 │   │       ├── artists.py       # Artist CRUD endpoints
@@ -46,29 +46,20 @@ accessible/
 │   └── seed_data.sql           # Sample data
 │
 ├── compose.yaml                # Docker Compose configuration
+├── version.json                # Semantic version configuration
 ├── init-database.sh           # Database initialization script
+├── set-version.sh             # Script to apply version from version.json
+├── bump-version.sh            # Script to bump semantic version
+├── build-versioned.sh         # Script to build with version tags
+├── publish-images.sh          # Script to publish versioned images
 ├── setup-env.sh               # Environment setup helper
+├── .env                       # Environment variables (gitignored)
 ├── .env.example               # Environment variables template
 ├── .gitignore                 # Git ignore patterns
 ├── README.md                  # Main documentation
 ├── GETTING_STARTED.md         # Quick start guide
 └── PROJECT_STRUCTURE.md       # This file
 ```
-
-## Mapping to Java JPA Project
-
-### Source: `/Users/pmcgee/_dev/star-songs/songdata/src/main/java/com/mcgeecahill/starsongs/songdata`
-
-| Java Component | Python Equivalent | Purpose |
-|---------------|------------------|---------|
-| `domain/Artist.java` | `app/models.py::Artist` | Artist entity/ORM model |
-| `domain/Song.java` | `app/models.py::Song` | Song entity/ORM model |
-| `dto/ArtistDto.java` | `app/schemas.py::ArtistDto` | Artist data transfer object |
-| `dto/SongDto.java` | `app/schemas.py::SongDto` | Song data transfer object |
-| `controllers/ArtistRestControllerV1.java` | `app/routers/artists.py` | Artist REST endpoints |
-| `controllers/SongRestControllerV1.java` | `app/routers/songs.py` | Song REST endpoints |
-| `jpa/ArtistRepository.java` | SQLAlchemy Session (via `get_db()`) | Data access |
-| `jpa/SongRepository.java` | SQLAlchemy Session (via `get_db()`) | Data access |
 
 ## Technology Stack
 
@@ -107,7 +98,7 @@ The FastAPI backend provides the following REST endpoints:
 
 ## Database Schema
 
-The schema is defined in `sql/schema.sql` and matches the JPA entity definitions:
+The schema is defined in `sql/schema.sql`:
 
 ### Artist Table
 ```sql
@@ -168,25 +159,6 @@ The application uses environment variables for configuration:
 - **Auto-restart**: unless-stopped
 - **Environment**: API URL configuration
 
-## Key Differences from Java Implementation
-
-1. **Field Naming**:
-   - Database uses SQL Server conventions: `artistID`, `released`, `URL`
-   - DTOs use camelCase: `artistId`, `releaseDate`, `url`
-   - Python code handles the mapping transparently
-
-2. **Repository Pattern**:
-   - Java uses Spring Data JPA repositories
-   - Python uses SQLAlchemy Session directly via dependency injection
-
-3. **Error Handling**:
-   - Java uses custom exception classes with `@ControllerAdvice`
-   - Python uses FastAPI `HTTPException`
-
-4. **Documentation**:
-   - Java requires SpringDoc annotations
-   - Python generates OpenAPI docs automatically from Pydantic models
-
 ## Development Workflow
 
 1. **Start services**: `docker compose up -d`
@@ -223,8 +195,8 @@ curl -X POST http://localhost:8000/v1/songs \
   -H "Content-Type: application/json" \
   -d '{
     "title": "Test Song",
-    "artistId": 1,
-    "releaseDate": "2024-01-01",
+    "artist_id": 1,
+    "release_date": "2024-01-01",
     "url": "https://example.com",
     "distance": 100.0
   }'

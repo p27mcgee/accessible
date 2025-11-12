@@ -1,5 +1,4 @@
 -- Star Songs Database Schema for SQL Server
--- Based on JPA entities from star-songs project
 
 -- Drop tables if they exist (for clean recreation)
 IF OBJECT_ID('dbo.Song', 'U') IS NOT NULL DROP TABLE dbo.Song;

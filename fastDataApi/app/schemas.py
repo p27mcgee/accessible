@@ -1,7 +1,6 @@
 """
-Pydantic schemas (DTOs) matching the Java DTOs from star-songs project
-- ArtistDto corresponds to com.mcgeecahill.starsongs.songdata.dto.ArtistDto
-- SongDto corresponds to com.mcgeecahill.starsongs.songdata.dto.SongDto
+Pydantic schemas for the Accessible API.
+Uses Python idiomatic naming conventions (snake_case).
 """
 from pydantic import BaseModel, ConfigDict
 from typing import Optional
@@ -23,11 +22,8 @@ class ArtistUpdate(ArtistBase):
     pass
 
 
-class ArtistDto(ArtistBase):
-    """
-    Artist DTO - corresponds to ArtistDto.java
-    Used for responses
-    """
+class Artist(ArtistBase):
+    """Artist schema for API responses"""
     id: int
 
     model_config = ConfigDict(from_attributes=True)
@@ -36,8 +32,8 @@ class ArtistDto(ArtistBase):
 class SongBase(BaseModel):
     """Base schema for Song with common fields"""
     title: str
-    artistId: Optional[int] = None
-    releaseDate: Optional[date] = None
+    artist_id: Optional[int] = None
+    release_date: Optional[date] = None
     url: Optional[str] = None
     distance: Optional[float] = None
 
@@ -52,29 +48,26 @@ class SongUpdate(SongBase):
     pass
 
 
-class SongDto(SongBase):
+class Song(SongBase):
     """
-    Song DTO - corresponds to SongDto.java
-    Used for responses
-
-    Note: The Java DTO uses 'artistId', 'releaseDate', and 'url'
-    which we match here for API compatibility
+    Song schema for API responses.
+    Maps database column names to Pythonic field names.
     """
     id: int
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
     @classmethod
-    def from_orm_model(cls, song_model):
+    def from_orm(cls, song_model):
         """
-        Convert SQLAlchemy model to DTO
-        Maps database column names to DTO field names
+        Convert SQLAlchemy model to Pydantic schema.
+        Maps database column names to snake_case field names.
         """
         return cls(
             id=song_model.id,
             title=song_model.title,
-            artistId=song_model.artistID,
-            releaseDate=song_model.released,
+            artist_id=song_model.artistID,
+            release_date=song_model.released,
             url=song_model.URL,
             distance=song_model.distance
         )
