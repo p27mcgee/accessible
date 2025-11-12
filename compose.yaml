@@ -27,7 +27,11 @@ services:
     build:
       context: ./fastDataApi
       dockerfile: Dockerfile
+      platforms:
+        - linux/amd64
+    image: accessible-fast-data-api:${VERSION:-latest}
     container_name: accessible-fast-data-api
+    platform: linux/amd64
     environment:
       - DB_SERVER=sqlserver
       - DB_PORT=1433
@@ -47,7 +51,11 @@ services:
     build:
       context: ./nextui
       dockerfile: Dockerfile
+      platforms:
+        - linux/amd64
+    image: accessible-nextui:${VERSION:-latest}
     container_name: accessible-nextui
+    platform: linux/amd64
     environment:
       - NEXT_PUBLIC_SONGDATA_API_URL=http://fastDataApi:8000
     ports:

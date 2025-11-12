@@ -46,8 +46,14 @@ accessible/
 │   └── seed_data.sql           # Sample data
 │
 ├── compose.yaml                # Docker Compose configuration
+├── version.json                # Semantic version configuration
 ├── init-database.sh           # Database initialization script
+├── set-version.sh             # Script to apply version from version.json
+├── bump-version.sh            # Script to bump semantic version
+├── build-versioned.sh         # Script to build with version tags
+├── publish-images.sh          # Script to publish versioned images
 ├── setup-env.sh               # Environment setup helper
+├── .env                       # Environment variables (gitignored)
 ├── .env.example               # Environment variables template
 ├── .gitignore                 # Git ignore patterns
 ├── README.md                  # Main documentation
