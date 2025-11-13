@@ -1,31 +1,51 @@
 # Accessible - Full Stack Development Environment
 
-Docker Compose setup for running SQL Server on macOS (including Apple Silicon) with a Python FastAPI backend and Next.js frontend.
+Docker Compose setup for running SQL Server on macOS (including Apple Silicon) with Python API backends (FastAPI and Flask) and Next.js frontend.
 
 ## Services
 
-- **SQL Server 2022** - Database server (port 1433)
-- **fastDataApi** - Python FastAPI backend (port 8000)
+- **fastDataApi** - Python FastAPI backend (port 8000) - High-performance ASGI
+- **flaskDataApi** - Python Flask backend (port 8001) - Traditional WSGI (demonstration)
 - **nextui** - Next.js frontend (port 80)
+- **SQL Server 2022** - Database (port 1433) - Managed independently for dev/test
 
-The API provides CRUD endpoints for artists and songs, with a modern React-based user interface.
+Both APIs provide identical CRUD endpoints for artists and songs. You can choose which one to use or run both simultaneously for comparison.
+
+**Note:** The database runs independently via Makefile for dev/test. In production, the database is external (managed service).
 
 ## Quick Start
 
-### 1. Start the Services
+### 1. Start and Initialize Database
 
 ```bash
-# Start all services (builds amd64 images automatically)
-docker compose up -d
+# Start database container
+make db-start
 
-# Wait for SQL Server to be ready (about 30 seconds)
-# Then initialize the database
-./init-database.sh
+# Initialize database (create DB, schema, seed data)
+make db-init
+
+# Verify database is ready
+make db-status
 ```
+
+### 2. Start Application Services
+
+```bash
+# Start with FastAPI (recommended)
+./start-with-api.sh fastapi
+
+# Or start with Flask
+./start-with-api.sh flask
+
+# Or start both for comparison
+./start-with-api.sh both
+```
+
+**Note:** See [SWITCHING_APIS.md](SWITCHING_APIS.md) for detailed instructions on switching between APIs.
 
 **Note:** Images are built for linux/amd64 architecture and will run via Rosetta 2 on Apple Silicon Macs.
 
-### 2. Access the Services
+### 3. Access the Services
 
 **Frontend:**
 - Web UI: http://localhost (port 80)
@@ -40,7 +60,7 @@ docker compose up -d
 - Swagger UI: http://localhost:8000/swagger-ui.html
 - API Docs: http://localhost:8000/api-docs
 
-### 3. Test the API
+### 4. Test the API
 
 ```bash
 # Get all artists
@@ -55,15 +75,21 @@ curl -X POST http://localhost:8000/v1/artists \
   -d '{"name": "New Artist"}'
 ```
 
-### Alternative: Setup Script
+## Database Management
 
-Use the setup script to create your `.env` file:
+The database is managed independently via Makefile for development and testing:
 
 ```bash
-./setup-env.sh
+make db-start    # Start database container
+make db-stop     # Stop database container
+make db-status   # Check database state (absent/empty/ready)
+make db-init     # Initialize database
+make db-clean    # Remove container and data (destructive)
+make db-logs     # View database logs
+make db-shell    # Open sqlcmd shell
 ```
 
-This will create a `.env` file with SQL Server 2022 configured. All images use amd64 architecture regardless of your host CPU (works via Rosetta 2 on Apple Silicon).
+See [DATABASE.md](DATABASE.md) for comprehensive database management documentation.
 
 ## Architecture Support
 
@@ -100,128 +126,118 @@ All application Docker images are built for **linux/amd64** architecture for max
 
 ## Connecting to SQL Server
 
-### Connection String
+### Direct Connection (from host machine)
 ```
-Server=localhost,1433;Database=master;User Id=sa;Password=YourStrong@Passw0rd;TrustServerCertificate=True
+Server: localhost,1433
+Database: starsongs
+User Id: sa
+Password: YourStrong@Passw0rd
+TrustServerCertificate: True
 ```
 
 ### Using Azure Data Studio (Recommended)
 1. Download from: https://docs.microsoft.com/en-us/sql/azure-data-studio/download
 2. Connect with hostname `localhost`, port `1433`, user `sa`
 
-### Using sqlcmd (Command Line)
+### Using sqlcmd (via Makefile)
 ```bash
-docker exec -it sqlserver-dev /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P YourStrong@Passw0rd
+make db-shell
 ```
 
-## Managing the Container
-
-### Start SQL Server
-```bash
-docker compose up -d
-```
-
-### Stop SQL Server
-```bash
-docker compose down
-```
+## Managing Services
 
 ### View logs
 ```bash
-# All services
+# All application services
 docker compose logs -f
 
 # Individual services
 docker compose logs -f nextui
 docker compose logs -f fastDataApi
-docker compose logs -f sqlserver
+docker compose logs -f flaskDataApi
+
+# Database logs
+make db-logs
+```
+
+### Stop Services
+```bash
+# Stop application services
+docker compose down
+
+# Stop database
+make db-stop
 ```
 
 ### Reset database (⚠️ deletes all data)
 ```bash
-docker compose down -v
-docker compose up -d
+make db-clean      # Remove database container and volume
+make db-start      # Start fresh
+make db-init       # Initialize
 ```
 
 ## Data Persistence
 
 Database files are stored in a Docker volume named `sqlserver-data`. This persists data between container restarts.
 
-To backup/restore:
-```bash
-# Backup
-docker run --rm -v sqlserver-data:/data -v $(pwd):/backup alpine tar czf /backup/sqlserver-backup.tar.gz /data
-
-# Restore
-docker run --rm -v sqlserver-data:/data -v $(pwd):/backup alpine tar xzf /backup/sqlserver-backup.tar.gz -C /
-```
+See [DATABASE.md](DATABASE.md#backup-and-restore) for backup and restore procedures.
 
 ## Docker Image Management
 
 ### Semantic Versioning
 
-The project uses semantic versioning (MAJOR.MINOR.PATCH) defined in `version.json`. This version is automatically applied as a Docker image tag during build and publish operations.
+The project uses semantic versioning (MAJOR.MINOR.PATCH) defined in `pyproject.toml`. This follows Python packaging standards (PEP 621).
 
-**Version configuration file:**
-```json
-{
-  "version": "1.0.0",
-  "description": "Accessible project version - used for Docker image tagging",
-  "services": {
-    "fastDataApi": {
-      "version": "1.0.0",
-      "image": "accessible-fast-data-api"
-    },
-    "nextui": {
-      "version": "1.0.0",
-      "image": "accessible-nextui"
-    }
-  }
-}
+**Version configuration:**
+```toml
+[project]
+name = "accessible"
+version = "1.0.0"  # Edit this to update version
 ```
 
 **Quick version workflow:**
 
-1. **Bump version** - Run `./bump-version.sh [major|minor|patch]` to increment version
-2. **Build** - Run `./build-versioned.sh` to build images with version tag
-3. **Publish** - Run `./publish-images.sh [registry] [username]` to publish
+1. **Set version** - Edit `pyproject.toml` directly
+2. **Build** - Run `make build` to build all images with version tag
+3. **Tag** - Run `make tag` to create registry-prefixed tags
+4. **Publish** - Run `make push` to publish to Docker Hub
 
-**Version management scripts:**
+**Detailed commands:**
 ```bash
-# Bump version automatically (updates version.json and .env)
-./bump-version.sh patch    # 1.0.0 -> 1.0.1
-./bump-version.sh minor    # 1.0.1 -> 1.1.0
-./bump-version.sh major    # 1.1.0 -> 2.0.0
+# 1. Update version
+vim pyproject.toml  # Change version = "1.1.0"
 
-# Or manually update version.json, then apply
-./set-version.sh           # Reads version.json, updates .env
+# 2. Build all services
+make build
+
+# 3. Tag for Docker Hub registry (pmcgee namespace)
+make tag
+
+# 4. Login to Docker Hub
+docker login
+
+# 5. Push to Docker Hub
+make push
 ```
 
-**Manual version management:**
+**Additional make commands:**
 ```bash
-# Set version from version.json into .env
-./set-version.sh
+# Display current version
+make version
 
-# Build with version tag (reads from .env)
-docker compose build
+# Build individual services
+make build-fast-data-api
+make build-flask-data-api
+make build-ui
 
-# Or use the all-in-one build script
-./build-versioned.sh
+# Remove all images (free disk space)
+make clean
+
+# Show all available commands
+make help
 ```
 
-**Publish images with version:**
-```bash
-# Publish to Docker Hub (default)
-./publish-images.sh dockerhub your-username
-
-# Publish to GitHub Container Registry
-./publish-images.sh ghcr your-username
-
-# Publish to custom registry
-./publish-images.sh registry.example.com your-username
-```
-
-The publish script automatically tags images with both the semantic version (e.g., `1.0.0`) and `latest`.
+For complete build documentation, see [BUILD.md](BUILD.md).
 
 ### Cleaning Docker Resources
 
@@ -239,12 +255,13 @@ docker system prune -a --volumes
 
 **Remove specific project images:**
 ```bash
-# Remove all project images
-docker rmi accessible-fast-data-api:latest
-docker rmi accessible-nextui:latest
+# Remove all project images (using Makefile)
+make clean
 
-# Or force remove if containers are using them
-docker rmi -f accessible-fast-data-api:latest accessible-nextui:latest
+# Or manually remove specific images
+docker rmi pmcgee/accessible-fast-data-api:latest
+docker rmi pmcgee/accessible-flask-data-api:latest
+docker rmi pmcgee/accessible-nextui:latest
 ```
 
 **Clean and rebuild everything:**
@@ -253,10 +270,11 @@ docker rmi -f accessible-fast-data-api:latest accessible-nextui:latest
 docker compose down -v
 
 # Remove project images
-docker rmi accessible-fast-data-api:latest accessible-nextui:latest
+make clean
 
-# Rebuild and start fresh
-docker compose up -d --build
+# Rebuild fresh
+make build
+make tag
 ```
 
 ### Building Docker Images
@@ -269,155 +287,83 @@ All images are built for **linux/amd64** architecture. This ensures compatibilit
 
 **Build all images:**
 ```bash
-# Build without starting
-docker compose build
-
-# Build with no cache (fresh build)
-docker compose build --no-cache
-
-# Build and start
-docker compose up -d --build
+# Build all services with version from pyproject.toml
+make build
 
 # Verify platform
 docker inspect accessible-fast-data-api:latest --format '{{.Os}}/{{.Architecture}}'
 # Should output: linux/amd64
 ```
 
-**Note:** You may see a warning during build about `FROM --platform flag should not use constant value`. This is expected and can be ignored - we intentionally build for amd64 architecture.
-
 **Build specific service:**
 ```bash
-# Build only the API
-docker compose build fastDataApi
+# Build only FastAPI service
+make build-fast-data-api
+
+# Build only Flask service
+make build-flask-data-api
 
 # Build only the frontend
-docker compose build nextui
-
-# Rebuild and restart specific service
-docker compose up -d --build fastDataApi
+make build-ui
 ```
 
-**Build with custom tags:**
-```bash
-# Build with version tag
-docker build -t accessible-fast-data-api:1.0.0 ./fastDataApi
-docker build -t accessible-nextui:1.0.0 ./nextui
+**Image naming:**
+- Local build creates: `accessible-fast-data-api:1.0.0` and `accessible-fast-data-api:latest`
+- After `make tag`: `pmcgee/accessible-fast-data-api:1.0.0` and `pmcgee/accessible-fast-data-api:latest`
 
-# Build with multiple tags
-docker build -t accessible-fast-data-api:latest -t accessible-fast-data-api:1.0.0 ./fastDataApi
-```
+For complete build documentation, see [BUILD.md](BUILD.md).
 
 ### Publishing Docker Images
 
-#### 1. Docker Hub
-
-**Login and push:**
+**Quick publish to Docker Hub:**
 ```bash
-# Login to Docker Hub
+# 1. Build images
+make build
+
+# 2. Tag for registry
+make tag
+
+# 3. Login to Docker Hub
 docker login
 
-# Tag images with your username
-docker tag accessible-fast-data-api:latest your-username/accessible-fast-data-api:latest
-docker tag accessible-nextui:latest your-username/accessible-nextui:latest
-
-# Push to Docker Hub
-docker push your-username/accessible-fast-data-api:latest
-docker push your-username/accessible-nextui:latest
-
-# Push with version tag
-docker tag accessible-fast-data-api:latest your-username/accessible-fast-data-api:1.0.0
-docker push your-username/accessible-fast-data-api:1.0.0
+# 4. Push all images
+make push
 ```
 
-#### 2. GitHub Container Registry
+This publishes all three services (FastAPI, Flask, Next.js) to Docker Hub under the `pmcgee` namespace.
 
-**Login and push:**
-```bash
-# Create a Personal Access Token (PAT) with write:packages scope
-# https://github.com/settings/tokens
-
-# Login to GitHub Container Registry
-echo $GITHUB_TOKEN | docker login ghcr.io -u your-username --password-stdin
-
-# Tag images with GitHub registry
-docker tag accessible-fast-data-api:latest ghcr.io/your-username/accessible-fast-data-api:latest
-docker tag accessible-nextui:latest ghcr.io/your-username/accessible-nextui:latest
-
-# Push to GitHub Container Registry
-docker push ghcr.io/your-username/accessible-fast-data-api:latest
-docker push ghcr.io/your-username/accessible-nextui:latest
-```
-
-#### 3. Private Registry
-
-**Using a private registry:**
-```bash
-# Login to private registry
-docker login registry.example.com
-
-# Tag images
-docker tag accessible-fast-data-api:latest registry.example.com/accessible-fast-data-api:latest
-docker tag accessible-nextui:latest registry.example.com/accessible-nextui:latest
-
-# Push to private registry
-docker push registry.example.com/accessible-fast-data-api:latest
-docker push registry.example.com/accessible-nextui:latest
-```
+**Verify published images:**
+Visit https://hub.docker.com/u/pmcgee to see:
+- `pmcgee/accessible-fast-data-api:1.0.0` and `:latest`
+- `pmcgee/accessible-flask-data-api:1.0.0` and `:latest`
+- `pmcgee/accessible-nextui:1.0.0` and `:latest`
 
 ### Using Published Images
 
-**Update compose.yaml to use published images:**
+The `compose.yaml` is configured to use published images from Docker Hub:
+
 ```yaml
 services:
   fastDataApi:
-    image: your-username/accessible-fast-data-api:latest
-    # Remove build section to use pre-built image
+    image: pmcgee/accessible-fast-data-api:latest
+    # No build section - uses pre-built image
+
+  flaskDataApi:
+    image: pmcgee/accessible-flask-data-api:latest
+    # No build section - uses pre-built image
 
   nextui:
-    image: your-username/accessible-nextui:latest
-    # Remove build section to use pre-built image
+    image: pmcgee/accessible-nextui:latest
+    # No build section - uses pre-built image
 ```
 
 **Pull and run published images:**
 ```bash
-# Pull latest images
+# Pull latest images from Docker Hub
 docker compose pull
 
 # Start with pulled images
-docker compose up -d
-```
-
-### Image Versioning Best Practices
-
-**Semantic versioning:**
-```bash
-# Tag with version
-docker tag accessible-fast-data-api:latest accessible-fast-data-api:1.2.3
-
-# Push multiple tags
-docker push accessible-fast-data-api:latest
-docker push accessible-fast-data-api:1.2.3
-docker push accessible-fast-data-api:1.2
-docker push accessible-fast-data-api:1
-```
-
-**Git commit-based tagging:**
-```bash
-# Tag with git commit hash
-GIT_HASH=$(git rev-parse --short HEAD)
-docker tag accessible-fast-data-api:latest accessible-fast-data-api:$GIT_HASH
-docker push accessible-fast-data-api:$GIT_HASH
-```
-
-**Development vs Production:**
-```bash
-# Tag for different environments
-docker tag accessible-fast-data-api:latest accessible-fast-data-api:dev
-docker tag accessible-fast-data-api:latest accessible-fast-data-api:prod
-
-# Or use branches
-docker tag accessible-fast-data-api:latest accessible-fast-data-api:main
-docker tag accessible-fast-data-api:latest accessible-fast-data-api:develop
+docker compose --profile fastapi up -d
 ```
 
 ## Troubleshooting
@@ -436,10 +382,11 @@ ports:
   - "1434:1433"  # Use port 1434 on host
 ```
 
-### Health check failing
-Wait 30-60 seconds for SQL Server to fully start. Check logs:
+### Database not ready
+Wait 30-60 seconds for SQL Server to fully start. Check status:
 ```bash
-docker compose logs sqlserver
+make db-status
+make db-logs
 ```
 
 ### Verifying image architecture
