@@ -4,16 +4,31 @@ Docker Compose setup for running SQL Server on macOS (including Apple Silicon) w
 
 ## Services
 
-- **SQL Server 2022** - Database server (port 1433)
 - **fastDataApi** - Python FastAPI backend (port 8000) - High-performance ASGI
 - **flaskDataApi** - Python Flask backend (port 8001) - Traditional WSGI (demonstration)
 - **nextui** - Next.js frontend (port 80)
+- **SQL Server 2022** - Database (port 1433) - Managed independently for dev/test
 
 Both APIs provide identical CRUD endpoints for artists and songs. You can choose which one to use or run both simultaneously for comparison.
 
+**Note:** The database runs independently via Makefile for dev/test. In production, the database is external (managed service).
+
 ## Quick Start
 
-### 1. Start the Services
+### 1. Start and Initialize Database
+
+```bash
+# Start database container
+make db-start
+
+# Initialize database (create DB, schema, seed data)
+make db-init
+
+# Verify database is ready
+make db-status
+```
+
+### 2. Start Application Services
 
 ```bash
 # Start with FastAPI (recommended)
@@ -24,17 +39,13 @@ Both APIs provide identical CRUD endpoints for artists and songs. You can choose
 
 # Or start both for comparison
 ./start-with-api.sh both
-
-# Wait for SQL Server to be ready (about 30 seconds)
-# Then initialize the database
-./init-database.sh
 ```
 
 **Note:** See [SWITCHING_APIS.md](SWITCHING_APIS.md) for detailed instructions on switching between APIs.
 
 **Note:** Images are built for linux/amd64 architecture and will run via Rosetta 2 on Apple Silicon Macs.
 
-### 2. Access the Services
+### 3. Access the Services
 
 **Frontend:**
 - Web UI: http://localhost (port 80)
@@ -49,7 +60,7 @@ Both APIs provide identical CRUD endpoints for artists and songs. You can choose
 - Swagger UI: http://localhost:8000/swagger-ui.html
 - API Docs: http://localhost:8000/api-docs
 
-### 3. Test the API
+### 4. Test the API
 
 ```bash
 # Get all artists
@@ -64,15 +75,21 @@ curl -X POST http://localhost:8000/v1/artists \
   -d '{"name": "New Artist"}'
 ```
 
-### Alternative: Setup Script
+## Database Management
 
-Use the setup script to create your `.env` file:
+The database is managed independently via Makefile for development and testing:
 
 ```bash
-./setup-env.sh
+make db-start    # Start database container
+make db-stop     # Stop database container
+make db-status   # Check database state (absent/empty/ready)
+make db-init     # Initialize database
+make db-clean    # Remove container and data (destructive)
+make db-logs     # View database logs
+make db-shell    # Open sqlcmd shell
 ```
 
-This will create a `.env` file with SQL Server 2022 configured. All images use amd64 architecture regardless of your host CPU (works via Rosetta 2 on Apple Silicon).
+See [DATABASE.md](DATABASE.md) for comprehensive database management documentation.
 
 ## Architecture Support
 
@@ -109,61 +126,61 @@ All application Docker images are built for **linux/amd64** architecture for max
 
 ## Connecting to SQL Server
 
-### Connection String
+### Direct Connection (from host machine)
 ```
-Server=localhost,1433;Database=master;User Id=sa;Password=YourStrong@Passw0rd;TrustServerCertificate=True
+Server: localhost,1433
+Database: starsongs
+User Id: sa
+Password: YourStrong@Passw0rd
+TrustServerCertificate: True
 ```
 
 ### Using Azure Data Studio (Recommended)
 1. Download from: https://docs.microsoft.com/en-us/sql/azure-data-studio/download
 2. Connect with hostname `localhost`, port `1433`, user `sa`
 
-### Using sqlcmd (Command Line)
+### Using sqlcmd (via Makefile)
 ```bash
-docker exec -it sqlserver-dev /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P YourStrong@Passw0rd
+make db-shell
 ```
 
-## Managing the Container
-
-### Start SQL Server
-```bash
-docker compose up -d
-```
-
-### Stop SQL Server
-```bash
-docker compose down
-```
+## Managing Services
 
 ### View logs
 ```bash
-# All services
+# All application services
 docker compose logs -f
 
 # Individual services
 docker compose logs -f nextui
 docker compose logs -f fastDataApi
-docker compose logs -f sqlserver
+docker compose logs -f flaskDataApi
+
+# Database logs
+make db-logs
+```
+
+### Stop Services
+```bash
+# Stop application services
+docker compose down
+
+# Stop database
+make db-stop
 ```
 
 ### Reset database (⚠️ deletes all data)
 ```bash
-docker compose down -v
-docker compose up -d
+make db-clean      # Remove database container and volume
+make db-start      # Start fresh
+make db-init       # Initialize
 ```
 
 ## Data Persistence
 
 Database files are stored in a Docker volume named `sqlserver-data`. This persists data between container restarts.
 
-To backup/restore:
-```bash
-# Backup
-docker run --rm -v sqlserver-data:/data -v $(pwd):/backup alpine tar czf /backup/sqlserver-backup.tar.gz /data
-
-# Restore
-docker run --rm -v sqlserver-data:/data -v $(pwd):/backup alpine tar xzf /backup/sqlserver-backup.tar.gz -C /
-```
+See [DATABASE.md](DATABASE.md#backup-and-restore) for backup and restore procedures.
 
 ## Docker Image Management
 
@@ -365,10 +382,11 @@ ports:
   - "1434:1433"  # Use port 1434 on host
 ```
 
-### Health check failing
-Wait 30-60 seconds for SQL Server to fully start. Check logs:
+### Database not ready
+Wait 30-60 seconds for SQL Server to fully start. Check status:
 ```bash
-docker compose logs sqlserver
+make db-status
+make db-logs
 ```
 
 ### Verifying image architecture

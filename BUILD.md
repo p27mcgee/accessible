@@ -14,6 +14,9 @@ This approach provides:
 - Per-service build capability
 - Kubernetes-ready image naming
 - No dependency on docker compose for building
+- Independent database management for dev/test
+
+**Note:** The database is managed separately via Makefile for development/testing. In production, the database is external (managed service). See [DATABASE.md](DATABASE.md) for database management.
 
 ## Prerequisites
 
@@ -23,6 +26,8 @@ This approach provides:
 - Docker Hub account (for publishing)
 
 ## Quick Start
+
+### Build and Publish
 
 ```bash
 # 1. Set version in pyproject.toml
@@ -40,6 +45,21 @@ docker login
 # 5. Push to Docker Hub
 make push
 ```
+
+### Database Setup (Development)
+
+```bash
+# Start database
+make db-start
+
+# Initialize database
+make db-init
+
+# Check status
+make db-status
+```
+
+See [DATABASE.md](DATABASE.md) for comprehensive database management.
 
 ## Image Naming
 
@@ -188,6 +208,9 @@ This ensures:
 ### Development Build
 
 ```bash
+# Start database first
+make db-start && make db-init
+
 # Build single service during development
 make build-fast-data-api
 
@@ -463,3 +486,4 @@ docker images | grep accessible
 - See [README.md](README.md) for deployment instructions
 - See [SWITCHING_APIS.md](SWITCHING_APIS.md) for API selection
 - See [GETTING_STARTED.md](GETTING_STARTED.md) for quick start guide
+- See [DATABASE.md](DATABASE.md) for database management

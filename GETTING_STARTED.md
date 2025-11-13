@@ -14,12 +14,33 @@ This project provides a **full-stack application** with **SQL Server backend**, 
 
 ## Quick Start
 
-### 1. Start the Services
+### 1. Start and Initialize the Database
+
+The database is managed independently for dev/test:
+
+```bash
+# Start database container
+make db-start
+
+# Initialize database (create DB, schema, seed data)
+make db-init
+
+# Verify database is ready
+make db-status
+```
+
+You should see:
+```
+✅ Database state: READY
+   Database 'starsongs' is initialized and ready for use.
+   Tables: Artist, Song
+   Data: 5 artists, 6 songs
+```
+
+### 2. Start Application Services
 
 **Option A: Using the wrapper script (Recommended)**
 ```bash
-cd /Users/pmcgee/_dev/accessible
-
 # Start with FastAPI (recommended for production)
 ./start-with-api.sh fastapi
 
@@ -44,33 +65,22 @@ docker compose --profile both up -d
 
 **Note:** The project uses **pre-built images** from Docker Hub (pmcgee namespace). The first run will pull these images automatically.
 
-### 2. Initialize the Database
+### 3. Load Additional Sample Data (Optional)
+
+If you need to manually add data:
 
 ```bash
-# Wait 30 seconds for SQL Server to be ready, then initialize
-./init-database.sh
-```
+# Open database shell
+make db-shell
 
-### 3. Load Sample Data
-
-The init script attempts to load sample data, but if it fails, run:
-
-```bash
-# Insert Artists
-docker exec sqlserver-dev /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa \
-  -P "YourStrong@Passw0rd" -C -d starsongs \
-  -Q "INSERT INTO dbo.Artist (name) VALUES ('David Bowie'), ('The Beatles'), ('Elton John'), ('Queen'), ('Pink Floyd')"
-
-# Insert Songs (one at a time due to special characters)
-cat << 'EOF' | docker exec -i sqlserver-dev /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "YourStrong@Passw0rd" -C -d starsongs
-INSERT INTO dbo.Song (title, artistID, released, URL, distance) VALUES ('Space Oddity', 1, '1969-07-11', 'https://www.youtube.com/watch?v=iYYRH4apXDo', 238900.0);
-INSERT INTO dbo.Song (title, artistID, released, URL, distance) VALUES ('Starman', 1, '1972-04-28', 'https://www.youtube.com/watch?v=tRcPA7Fzebw', 384400.0);
-INSERT INTO dbo.Song (title, artistID, released, URL, distance) VALUES ('Across the Universe', 2, '1970-02-06', 'https://www.youtube.com/watch?v=90M60PzmxEE', 40000000.0);
-INSERT INTO dbo.Song (title, artistID, released, URL, distance) VALUES ('Rocket Man', 3, '1972-04-17', 'https://www.youtube.com/watch?v=DtVBCG6ThDk', 384400.0);
-INSERT INTO dbo.Song (title, artistID, released, URL, distance) VALUES ('''39', 4, '1975-11-21', 'https://www.youtube.com/watch?v=BjuyXR5by2s', 9460730472580.8);
-INSERT INTO dbo.Song (title, artistID, released, URL, distance) VALUES ('Astronomy Domine', 5, '1967-08-05', 'https://www.youtube.com/watch?v=pJh9OLlXenM', 4000000.0);
+# Then run SQL commands
+INSERT INTO dbo.Artist (name) VALUES ('New Artist');
 GO
-EOF
+
+SELECT * FROM dbo.Artist;
+GO
+
+quit
 ```
 
 ### 4. Access the Services
@@ -204,34 +214,49 @@ Both APIs provide identical endpoints and responses.
 
 ### View Logs
 ```bash
-# All services
+# Application services
 docker compose logs -f
 
-# Individual services
+# Individual application services
 docker compose logs -f nextui
 docker compose logs -f fastDataApi
-docker compose logs -f sqlserver
+docker compose logs -f flaskDataApi
+
+# Database logs
+make db-logs
 ```
 
 ### Restart Services
 ```bash
-# Restart everything
+# Restart application services
 docker compose restart
 
 # Restart individual services
 docker compose restart nextui
 docker compose restart fastDataApi
-docker compose restart sqlserver
+docker compose restart flaskDataApi
+
+# Restart database
+make db-stop
+make db-start
 ```
 
 ### Stop Services
 ```bash
+# Stop application services
 docker compose down
+
+# Stop database
+make db-stop
 ```
 
 ### Stop and Remove Data
 ```bash
-docker compose down -v
+# Stop and remove application services
+docker compose down
+
+# Remove database and all data
+make db-clean
 ```
 
 ## Connecting to SQL Server Directly
@@ -244,10 +269,20 @@ docker compose down -v
    - Username: sa
    - Password: YourStrong@Passw0rd
 
-### Using sqlcmd
+### Using sqlcmd (via Makefile)
 ```bash
-docker exec -it sqlserver-dev /opt/mssql-tools18/bin/sqlcmd \
-  -S localhost -U sa -P "YourStrong@Passw0rd" -C
+make db-shell
+```
+
+This opens an interactive SQL shell where you can run queries:
+```sql
+USE starsongs;
+GO
+
+SELECT * FROM dbo.Artist;
+GO
+
+quit
 ```
 
 ## Project Structure
@@ -291,6 +326,33 @@ accessible/
 
 ## Troubleshooting
 
+### Database won't start
+```bash
+# Check database status
+make db-status
+
+# Check database logs
+make db-logs
+
+# Clean and restart
+make db-clean
+make db-start
+make db-init
+```
+
+### Database not ready
+```bash
+# Check status
+make db-status
+
+# If EMPTY, initialize it
+make db-init
+
+# If ABSENT, start it first
+make db-start
+make db-init
+```
+
 ### API won't start
 ```bash
 # Check logs for FastAPI
@@ -299,6 +361,9 @@ docker compose logs fastDataApi
 # Check logs for Flask
 docker compose logs flaskDataApi
 
+# Verify database is ready first
+make db-status
+
 # Restart services
 docker compose restart fastDataApi
 docker compose restart flaskDataApi
@@ -306,25 +371,20 @@ docker compose restart flaskDataApi
 
 ### Can't connect to database
 ```bash
-# Verify SQL Server is running
-docker compose ps
+# Verify database is ready
+make db-status
 
-# Check SQL Server logs
-docker compose logs sqlserver
+# Test database shell
+make db-shell
 
-# Test connection
-docker exec sqlserver-dev /opt/mssql-tools18/bin/sqlcmd \
-  -S localhost -U sa -P "YourStrong@Passw0rd" -C -Q "SELECT @@VERSION"
-```
-
-### Database doesn't exist
-```bash
-# Reinitialize
-./init-database.sh
+# Check API environment variables
+docker compose exec fastDataApi env | grep DB_
 ```
 
 ### Port conflicts
-If port 8000, 8001, or 1433 is already in use, edit `compose.yaml` to change the port mappings.
+If port 8000, 8001, or 1433 is already in use:
+- For APIs: Edit `compose.yaml` port mappings
+- For database: Stop conflicting service or change Makefile DB_PORT
 
 ### Switching between APIs
 See [SWITCHING_APIS.md](SWITCHING_APIS.md) for detailed instructions on switching between FastAPI and Flask.
@@ -336,6 +396,22 @@ See [SWITCHING_APIS.md](SWITCHING_APIS.md) for detailed instructions on switchin
 - **Add filtering**: Add query parameters and search functionality
 - **Write tests**: Add pytest tests for the API and Vitest tests for frontend
 - **Deploy**: Deploy to a cloud provider (AWS, Azure, or Vercel)
+
+## Database Management
+
+For comprehensive database management documentation:
+
+```bash
+make db-start    # Start database container
+make db-stop     # Stop database container
+make db-status   # Check state (absent/empty/ready)
+make db-init     # Initialize database
+make db-clean    # Remove container and data
+make db-logs     # View logs
+make db-shell    # Open SQL shell
+```
+
+See [DATABASE.md](DATABASE.md) for complete database documentation.
 
 ## Building Images Locally
 
@@ -362,3 +438,4 @@ See [BUILD.md](BUILD.md) for comprehensive build and publishing instructions.
 - **SQL Server Documentation**: https://docs.microsoft.com/en-us/sql/
 - **Switching APIs Guide**: [SWITCHING_APIS.md](SWITCHING_APIS.md)
 - **Build Guide**: [BUILD.md](BUILD.md)
+- **Database Management**: [DATABASE.md](DATABASE.md)

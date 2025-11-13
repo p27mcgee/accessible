@@ -1,4 +1,5 @@
-.PHONY: help build build-fast-data-api build-flask-data-api build-ui tag push clean version
+.PHONY: help build build-fast-data-api build-flask-data-api build-ui tag push clean version \
+	db-start db-stop db-status db-init db-clean db-logs db-shell
 
 # Extract version from pyproject.toml
 # Try Python 3.11+ tomllib first, fallback to grep
@@ -23,6 +24,12 @@ FAST_DATA_API_CONTEXT := ./fastDataApi
 FLASK_DATA_API_CONTEXT := ./flaskDataApi
 NEXTUI_CONTEXT := ./nextui
 
+# Database configuration (for dev/test)
+DB_CONTAINER := sqlserver-dev
+DB_IMAGE := mcr.microsoft.com/mssql/server:2022-latest
+DB_PASSWORD := YourStrong@Passw0rd
+DB_VOLUME := sqlserver-data
+
 help:
 	@echo "Accessible Build System"
 	@echo "======================="
@@ -30,7 +37,7 @@ help:
 	@echo "Version: $(VERSION)"
 	@echo "Registry: $(REGISTRY)"
 	@echo ""
-	@echo "Available targets:"
+	@echo "Build targets:"
 	@echo "  make build                 - Build all services"
 	@echo "  make build-fast-data-api   - Build FastAPI data service"
 	@echo "  make build-flask-data-api  - Build Flask data service"
@@ -39,13 +46,21 @@ help:
 	@echo "  make push                  - Push all images to Docker Hub"
 	@echo "  make version               - Display current version"
 	@echo "  make clean                 - Remove local Docker images"
-	@echo "  make help                  - Show this help message"
+	@echo ""
+	@echo "Database targets (dev/test only):"
+	@echo "  make db-start              - Start database container"
+	@echo "  make db-stop               - Stop database container"
+	@echo "  make db-status             - Check database state (absent/empty/ready)"
+	@echo "  make db-init               - Initialize database (create DB, schema, seed data)"
+	@echo "  make db-clean              - Stop and remove database container + volume"
+	@echo "                             (use FORCE=yes to skip confirmation)"
+	@echo "  make db-logs               - View database logs"
+	@echo "  make db-shell              - Open sqlcmd shell to database"
 	@echo ""
 	@echo "Typical workflow:"
-	@echo "  1. Edit pyproject.toml to update version"
-	@echo "  2. make build              (builds locally as accessible-*)"
-	@echo "  3. make tag                (tags as pmcgee/accessible-*)"
-	@echo "  4. make push               (pushes to Docker Hub)"
+	@echo "  1. make db-start && make db-init    (start and initialize database)"
+	@echo "  2. docker compose --profile fastapi up -d  (start application services)"
+	@echo "  3. make db-status                   (verify database is ready)"
 	@echo ""
 
 version:
@@ -140,3 +155,98 @@ clean:
 	-docker rmi $(FLASK_DATA_API_IMAGE):$(VERSION) $(FLASK_DATA_API_IMAGE):latest 2>/dev/null || true
 	-docker rmi $(NEXTUI_IMAGE):$(VERSION) $(NEXTUI_IMAGE):latest 2>/dev/null || true
 	@echo "✓ Cleanup complete"
+
+# Database Management (Development/Test)
+# =======================================
+
+db-start:
+	@echo "Starting SQL Server database container..."
+	@if docker ps -a --format '{{.Names}}' | grep -q "^$(DB_CONTAINER)$$"; then \
+		if docker ps --format '{{.Names}}' | grep -q "^$(DB_CONTAINER)$$"; then \
+			echo "✓ Database container '$(DB_CONTAINER)' is already running"; \
+		else \
+			echo "Starting existing container '$(DB_CONTAINER)'..."; \
+			docker start $(DB_CONTAINER); \
+			echo "✓ Database container started"; \
+		fi \
+	else \
+		echo "Creating new database container '$(DB_CONTAINER)'..."; \
+		docker run -d \
+			--name $(DB_CONTAINER) \
+			-p 1433:1433 \
+			-e ACCEPT_EULA=Y \
+			-e MSSQL_SA_PASSWORD=$(DB_PASSWORD) \
+			-e MSSQL_PID=Developer \
+			-v $(DB_VOLUME):/var/opt/mssql \
+			-v $$(pwd)/sql:/docker-entrypoint-initdb.d \
+			$(DB_IMAGE); \
+		echo "✓ Database container created and started"; \
+		echo "  Waiting for SQL Server to be ready..."; \
+		sleep 10; \
+	fi
+	@echo ""
+	@echo "Database is starting up. Run 'make db-status' to check when ready."
+
+db-stop:
+	@echo "Stopping database container..."
+	@if docker ps --format '{{.Names}}' | grep -q "^$(DB_CONTAINER)$$"; then \
+		docker stop $(DB_CONTAINER); \
+		echo "✓ Database container stopped"; \
+	else \
+		echo "✓ Database container is not running"; \
+	fi
+
+db-status:
+	@./db-ready.sh
+
+db-init:
+	@echo "Initializing database..."
+	@echo ""
+	@echo "Step 1: Creating starsongs database..."
+	@docker exec $(DB_CONTAINER) /opt/mssql-tools18/bin/sqlcmd \
+		-S localhost -U sa -P "$(DB_PASSWORD)" -C \
+		-i /docker-entrypoint-initdb.d/init_db.sql
+	@echo "✓ Database created"
+	@echo ""
+	@echo "Step 2: Creating schema (tables, indexes)..."
+	@docker exec $(DB_CONTAINER) /opt/mssql-tools18/bin/sqlcmd \
+		-S localhost -U sa -P "$(DB_PASSWORD)" -C -d starsongs \
+		-i /docker-entrypoint-initdb.d/schema.sql
+	@echo "✓ Schema created"
+	@echo ""
+	@echo "Step 3: Loading seed data..."
+	@docker exec $(DB_CONTAINER) /opt/mssql-tools18/bin/sqlcmd \
+		-S localhost -U sa -P "$(DB_PASSWORD)" -C -d starsongs \
+		-i /docker-entrypoint-initdb.d/seed_data.sql
+	@echo "✓ Seed data loaded"
+	@echo ""
+	@echo "✅ Database initialization complete!"
+	@echo ""
+	@./db-ready.sh
+
+db-clean:
+	@if [ "$(FORCE)" != "yes" ] && [ "$(FORCE)" != "y" ] && [ "$(FORCE)" != "1" ]; then \
+		echo "⚠️  This will DESTROY the database container and all data!"; \
+		echo "Press Ctrl+C to cancel, or Enter to continue..."; \
+		read confirm; \
+	fi
+	@echo "Stopping and removing database container..."
+	-docker stop $(DB_CONTAINER) 2>/dev/null || true
+	-docker rm $(DB_CONTAINER) 2>/dev/null || true
+	@echo "Waiting for container to be removed..."
+	@while docker ps -a --format '{{.Names}}' | grep -q "^$(DB_CONTAINER)$$"; do \
+		sleep 0.5; \
+	done
+	@echo "Removing database volume..."
+	-docker volume rm $(DB_VOLUME) 2>/dev/null || true
+	@echo "✓ Database container and volume removed"
+
+db-logs:
+	@docker logs -f $(DB_CONTAINER)
+
+db-shell:
+	@echo "Opening sqlcmd shell to database..."
+	@echo "Tip: Run 'SELECT name FROM sys.databases;' to list databases"
+	@echo ""
+	@docker exec -it $(DB_CONTAINER) /opt/mssql-tools18/bin/sqlcmd \
+		-S localhost -U sa -P "$(DB_PASSWORD)" -C
