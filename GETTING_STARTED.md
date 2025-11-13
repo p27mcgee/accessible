@@ -2,30 +2,56 @@
 
 ## Summary
 
-This project provides a **full-stack application** with **SQL Server backend**, **Python FastAPI API**, and **Next.js frontend**.
+This project provides a **full-stack application** with **SQL Server backend**, **Python API backends** (both **FastAPI** and **Flask**), and **Next.js frontend**.
 
 **What's included:**
 - SQL Server 2022 running in Docker (with Rosetta 2 emulation on Apple Silicon)
-- Python FastAPI backend with CRUD endpoints (fastDataApi)
+- Python FastAPI backend with CRUD endpoints (fastDataApi, port 8000)
+- Python Flask backend with identical CRUD endpoints (flaskDataApi, port 8001)
 - Next.js frontend with React Server Components (nextui)
 - Database schema and sample data
-- Swagger/OpenAPI documentation
+- Swagger/OpenAPI documentation for both APIs
 
 ## Quick Start
 
 ### 1. Start the Services
 
+**Option A: Using the wrapper script (Recommended)**
 ```bash
 cd /Users/pmcgee/_dev/accessible
 
-# Start SQL Server and API
-docker compose up -d
+# Start with FastAPI (recommended for production)
+./start-with-api.sh fastapi
 
-# Wait 30 seconds for SQL Server to be ready, then initialize database
+# Or start with Flask (for demonstration)
+./start-with-api.sh flask
+
+# Or start both APIs simultaneously (for comparison)
+./start-with-api.sh both
+```
+
+**Option B: Using Docker Compose profiles directly**
+```bash
+# Start with FastAPI
+docker compose --profile fastapi up -d
+
+# Or start with Flask
+docker compose --profile flask up -d
+
+# Or start both APIs
+docker compose --profile both up -d
+```
+
+**Note:** The project uses **pre-built images** from Docker Hub (pmcgee namespace). The first run will pull these images automatically.
+
+### 2. Initialize the Database
+
+```bash
+# Wait 30 seconds for SQL Server to be ready, then initialize
 ./init-database.sh
 ```
 
-### 2. Load Sample Data
+### 3. Load Sample Data
 
 The init script attempts to load sample data, but if it fails, run:
 
@@ -47,16 +73,21 @@ GO
 EOF
 ```
 
-### 3. Access the Services
+### 4. Access the Services
 
 **Frontend:**
 - Web UI: http://localhost (port 80)
 
-**API Endpoints:**
+**FastAPI Endpoints (if using fastapi or both profile):**
 - Base URL: http://localhost:8000
 - Swagger UI: http://localhost:8000/swagger-ui.html
 - API Documentation: http://localhost:8000/api-docs
 - Health Check: http://localhost:8000/health
+
+**Flask API Endpoints (if using flask or both profile):**
+- Base URL: http://localhost:8001
+- Swagger UI: http://localhost:8001/apidocs
+- Health Check: http://localhost:8001/health
 
 **SQL Server:**
 - Host: localhost
@@ -67,9 +98,15 @@ EOF
 
 ## Testing the API
 
+These examples use port 8000 (FastAPI). If using Flask, change to port 8001.
+
 ### Get All Artists
 ```bash
+# FastAPI
 curl http://localhost:8000/v1/artists
+
+# Flask
+curl http://localhost:8001/v1/artists
 ```
 
 **Expected Response:**
@@ -149,12 +186,19 @@ curl -X DELETE http://localhost:8000/v1/songs/1
 
 The easiest way to test the API is through the Swagger UI:
 
+**FastAPI Swagger UI:**
 1. Open your browser to: http://localhost:8000/swagger-ui.html
 2. You'll see all available endpoints with descriptions
 3. Click on an endpoint to expand it
 4. Click "Try it out" to test the endpoint
 5. Fill in parameters and click "Execute"
 6. View the response below
+
+**Flask API Swagger UI:**
+1. Open your browser to: http://localhost:8001/apidocs
+2. Follow same steps as FastAPI
+
+Both APIs provide identical endpoints and responses.
 
 ## Managing the Environment
 
@@ -210,13 +254,22 @@ docker exec -it sqlserver-dev /opt/mssql-tools18/bin/sqlcmd \
 
 ```
 accessible/
-├── fastDataApi/            # Python FastAPI backend
+├── fastDataApi/            # Python FastAPI backend (port 8000)
 │   ├── app/
 │   │   ├── main.py        # FastAPI application
 │   │   ├── database.py    # Database connection
 │   │   ├── models.py      # SQLAlchemy ORM models
 │   │   ├── schemas.py     # Pydantic schemas
 │   │   └── routers/       # API endpoints
+│   ├── Dockerfile
+│   └── requirements.txt
+├── flaskDataApi/          # Python Flask backend (port 8001)
+│   ├── app/
+│   │   ├── __init__.py    # Flask application factory
+│   │   ├── database.py    # Database connection
+│   │   ├── models.py      # SQLAlchemy ORM models
+│   │   ├── schemas.py     # Marshmallow schemas
+│   │   └── routes/        # API endpoints
 │   ├── Dockerfile
 │   └── requirements.txt
 ├── nextui/                # Next.js frontend
@@ -230,7 +283,9 @@ accessible/
 │   ├── init_db.sql      # Create database
 │   ├── schema.sql       # Create tables
 │   └── seed_data.sql    # Sample data
-├── compose.yaml         # Docker Compose config
+├── compose.yaml         # Docker Compose config (uses pre-built images)
+├── Makefile             # Build system (for building images)
+├── pyproject.toml       # Version management and project metadata
 └── init-database.sh     # Database setup script
 ```
 
@@ -238,11 +293,15 @@ accessible/
 
 ### API won't start
 ```bash
-# Check logs
+# Check logs for FastAPI
 docker compose logs fastDataApi
 
-# Rebuild
-docker compose up -d --build fastDataApi
+# Check logs for Flask
+docker compose logs flaskDataApi
+
+# Restart services
+docker compose restart fastDataApi
+docker compose restart flaskDataApi
 ```
 
 ### Can't connect to database
@@ -265,7 +324,10 @@ docker exec sqlserver-dev /opt/mssql-tools18/bin/sqlcmd \
 ```
 
 ### Port conflicts
-If port 8000 or 1433 is already in use, edit `compose.yaml` to change the port mappings.
+If port 8000, 8001, or 1433 is already in use, edit `compose.yaml` to change the port mappings.
+
+### Switching between APIs
+See [SWITCHING_APIS.md](SWITCHING_APIS.md) for detailed instructions on switching between FastAPI and Flask.
 
 ## Next Steps
 
@@ -275,9 +337,28 @@ If port 8000 or 1433 is already in use, edit `compose.yaml` to change the port m
 - **Write tests**: Add pytest tests for the API and Vitest tests for frontend
 - **Deploy**: Deploy to a cloud provider (AWS, Azure, or Vercel)
 
+## Building Images Locally
+
+The project uses pre-built images from Docker Hub by default. If you want to build images locally (for development or customization):
+
+```bash
+# Build all services
+make build
+
+# Tag for local testing
+make tag
+
+# See BUILD.md for complete build documentation
+```
+
+See [BUILD.md](BUILD.md) for comprehensive build and publishing instructions.
+
 ## Additional Resources
 
 - **FastAPI Documentation**: https://fastapi.tiangolo.com
+- **Flask Documentation**: https://flask.palletsprojects.com
 - **Next.js Documentation**: https://nextjs.org/docs
 - **SQLAlchemy Documentation**: https://docs.sqlalchemy.org
 - **SQL Server Documentation**: https://docs.microsoft.com/en-us/sql/
+- **Switching APIs Guide**: [SWITCHING_APIS.md](SWITCHING_APIS.md)
+- **Build Guide**: [BUILD.md](BUILD.md)

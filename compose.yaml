@@ -25,12 +25,7 @@ services:
 
   fastDataApi:
     profiles: ["fastapi", "both"]
-    build:
-      context: ./fastDataApi
-      dockerfile: Dockerfile
-      platforms:
-        - linux/amd64
-    image: accessible-fast-data-api:${VERSION:-latest}
+    image: pmcgee/accessible-fast-data-api:latest
     container_name: accessible-fast-data-api
     platform: linux/amd64
     environment:
@@ -50,12 +45,7 @@ services:
 
   flaskDataApi:
     profiles: ["flask", "both"]
-    build:
-      context: ./flaskDataApi
-      dockerfile: Dockerfile
-      platforms:
-        - linux/amd64
-    image: accessible-flask-data-api:${VERSION:-latest}
+    image: pmcgee/accessible-flask-data-api:latest
     container_name: accessible-flask-data-api
     platform: linux/amd64
     environment:
@@ -74,12 +64,7 @@ services:
     restart: unless-stopped
 
   nextui:
-    build:
-      context: ./nextui
-      dockerfile: Dockerfile
-      platforms:
-        - linux/amd64
-    image: accessible-nextui:${VERSION:-latest}
+    image: pmcgee/accessible-nextui:latest
     container_name: accessible-nextui
     platform: linux/amd64
     environment:

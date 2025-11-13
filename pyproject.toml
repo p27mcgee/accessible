@@ -1,0 +1,43 @@
+[project]
+name = "accessible"
+version = "1.0.0"
+description = "Full-stack application with SQL Server, Python APIs (FastAPI/Flask), and Next.js frontend"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "Apache-2.0"}
+authors = [
+    {name = "McGee Cahill", email = "pmcgee@example.com"}
+]
+
+[project.urls]
+Homepage = "https://github.com/p27mcgee/accessible"
+Repository = "https://github.com/p27mcgee/accessible"
+
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+# Build configuration
+[tool.accessible]
+# Docker image registry and namespace
+registry = "pmcgee"
+platform = "linux/amd64"
+
+# Service definitions
+[tool.accessible.services.fast-data-api]
+name = "accessible-fast-data-api"
+context = "./fastDataApi"
+dockerfile = "Dockerfile"
+port = 8000
+
+[tool.accessible.services.flask-data-api]
+name = "accessible-flask-data-api"
+context = "./flaskDataApi"
+dockerfile = "Dockerfile"
+port = 8001
+
+[tool.accessible.services.nextui]
+name = "accessible-nextui"
+context = "./nextui"
+dockerfile = "Dockerfile"
+port = 3000
