@@ -30,7 +30,8 @@ echo "Username: $USERNAME"
 echo ""
 
 # Local image names
-LOCAL_API="accessible-fast-data-api:$VERSION"
+LOCAL_FAST_API="accessible-fast-data-api:$VERSION"
+LOCAL_FLASK_API="accessible-flask-data-api:$VERSION"
 LOCAL_UI="accessible-nextui:$VERSION"
 
 # Determine registry prefix
@@ -56,17 +57,22 @@ echo "Publishing to: $REGISTRY_URL"
 echo ""
 
 # Tag images
-API_TAG="$PREFIX/accessible-fast-data-api"
+FAST_API_TAG="$PREFIX/accessible-fast-data-api"
+FLASK_API_TAG="$PREFIX/accessible-flask-data-api"
 UI_TAG="$PREFIX/accessible-nextui"
 
 echo "Tagging images..."
-docker tag $LOCAL_API $API_TAG:$VERSION
-docker tag $LOCAL_API $API_TAG:latest
+docker tag $LOCAL_FAST_API $FAST_API_TAG:$VERSION
+docker tag $LOCAL_FAST_API $FAST_API_TAG:latest
+docker tag $LOCAL_FLASK_API $FLASK_API_TAG:$VERSION
+docker tag $LOCAL_FLASK_API $FLASK_API_TAG:latest
 docker tag $LOCAL_UI $UI_TAG:$VERSION
 docker tag $LOCAL_UI $UI_TAG:latest
 
-echo "✓ Tagged: $API_TAG:$VERSION"
-echo "✓ Tagged: $API_TAG:latest"
+echo "✓ Tagged: $FAST_API_TAG:$VERSION"
+echo "✓ Tagged: $FAST_API_TAG:latest"
+echo "✓ Tagged: $FLASK_API_TAG:$VERSION"
+echo "✓ Tagged: $FLASK_API_TAG:latest"
 echo "✓ Tagged: $UI_TAG:$VERSION"
 echo "✓ Tagged: $UI_TAG:latest"
 echo ""
@@ -83,11 +89,17 @@ fi
 echo ""
 echo "Pushing images..."
 
-echo "Pushing $API_TAG:$VERSION..."
-docker push $API_TAG:$VERSION
+echo "Pushing $FAST_API_TAG:$VERSION..."
+docker push $FAST_API_TAG:$VERSION
 
-echo "Pushing $API_TAG:latest..."
-docker push $API_TAG:latest
+echo "Pushing $FAST_API_TAG:latest..."
+docker push $FAST_API_TAG:latest
+
+echo "Pushing $FLASK_API_TAG:$VERSION..."
+docker push $FLASK_API_TAG:$VERSION
+
+echo "Pushing $FLASK_API_TAG:latest..."
+docker push $FLASK_API_TAG:latest
 
 echo "Pushing $UI_TAG:$VERSION..."
 docker push $UI_TAG:$VERSION
@@ -98,11 +110,14 @@ docker push $UI_TAG:latest
 echo ""
 echo "=== Publish Complete ==="
 echo "Images published:"
-echo "  $API_TAG:$VERSION"
-echo "  $API_TAG:latest"
+echo "  $FAST_API_TAG:$VERSION"
+echo "  $FAST_API_TAG:latest"
+echo "  $FLASK_API_TAG:$VERSION"
+echo "  $FLASK_API_TAG:latest"
 echo "  $UI_TAG:$VERSION"
 echo "  $UI_TAG:latest"
 echo ""
 echo "To use these images, update compose.yaml:"
-echo "  image: $API_TAG:$VERSION"
+echo "  image: $FAST_API_TAG:$VERSION"
+echo "  image: $FLASK_API_TAG:$VERSION"
 echo "  image: $UI_TAG:$VERSION"

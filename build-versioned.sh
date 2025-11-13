@@ -28,7 +28,7 @@ DOCKER_DEFAULT_PLATFORM=linux/amd64 docker compose build
 echo ""
 echo "=== Build Complete ==="
 echo "Images created:"
-docker images | grep -E "accessible-(fast-data-api|nextui)" | head -5
+docker images | grep -E "accessible-(fast-data-api|flask-data-api|nextui)" | head -10
 
 echo ""
 echo "To start the services:"
@@ -36,4 +36,5 @@ echo "  docker compose up -d"
 echo ""
 echo "To publish images:"
 echo "  docker push accessible-fast-data-api:$VERSION"
+echo "  docker push accessible-flask-data-api:$VERSION"
 echo "  docker push accessible-nextui:$VERSION"

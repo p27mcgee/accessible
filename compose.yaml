@@ -24,6 +24,7 @@ services:
       start_period: 10s
 
   fastDataApi:
+    profiles: ["fastapi", "both"]
     build:
       context: ./fastDataApi
       dockerfile: Dockerfile
@@ -47,6 +48,31 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  flaskDataApi:
+    profiles: ["flask", "both"]
+    build:
+      context: ./flaskDataApi
+      dockerfile: Dockerfile
+      platforms:
+        - linux/amd64
+    image: accessible-flask-data-api:${VERSION:-latest}
+    container_name: accessible-flask-data-api
+    platform: linux/amd64
+    environment:
+      - DB_SERVER=sqlserver
+      - DB_PORT=1433
+      - DB_NAME=starsongs
+      - DB_USER=sa
+      - DB_PASSWORD=YourStrong@Passw0rd
+    ports:
+      - "8001:8001"
+    networks:
+      - app-network
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    restart: unless-stopped
+
   nextui:
     build:
       context: ./nextui
@@ -57,13 +83,12 @@ services:
     container_name: accessible-nextui
     platform: linux/amd64
     environment:
-      - NEXT_PUBLIC_SONGDATA_API_URL=http://fastDataApi:8000
+      # Configure which API to use: fastDataApi:8000 or flaskDataApi:8001
+      - NEXT_PUBLIC_SONGDATA_API_URL=${API_SERVICE_URL:-http://fastDataApi:8000}
     ports:
       - "80:3000"
     networks:
       - app-network
-    depends_on:
-      - fastDataApi
     restart: unless-stopped
 
 volumes:

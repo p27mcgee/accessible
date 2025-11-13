@@ -6,6 +6,10 @@
       "version": "1.0.0",
       "image": "accessible-fast-data-api"
     },
+    "flaskDataApi": {
+      "version": "1.0.0",
+      "image": "accessible-flask-data-api"
+    },
     "nextui": {
       "version": "1.0.0",
       "image": "accessible-nextui"

@@ -1,27 +1,36 @@
 # Accessible - Full Stack Development Environment
 
-Docker Compose setup for running SQL Server on macOS (including Apple Silicon) with a Python FastAPI backend and Next.js frontend.
+Docker Compose setup for running SQL Server on macOS (including Apple Silicon) with Python API backends (FastAPI and Flask) and Next.js frontend.
 
 ## Services
 
 - **SQL Server 2022** - Database server (port 1433)
-- **fastDataApi** - Python FastAPI backend (port 8000)
+- **fastDataApi** - Python FastAPI backend (port 8000) - High-performance ASGI
+- **flaskDataApi** - Python Flask backend (port 8001) - Traditional WSGI (demonstration)
 - **nextui** - Next.js frontend (port 80)
 
-The API provides CRUD endpoints for artists and songs, with a modern React-based user interface.
+Both APIs provide identical CRUD endpoints for artists and songs. You can choose which one to use or run both simultaneously for comparison.
 
 ## Quick Start
 
 ### 1. Start the Services
 
 ```bash
-# Start all services (builds amd64 images automatically)
-docker compose up -d
+# Start with FastAPI (recommended)
+./start-with-api.sh fastapi
+
+# Or start with Flask
+./start-with-api.sh flask
+
+# Or start both for comparison
+./start-with-api.sh both
 
 # Wait for SQL Server to be ready (about 30 seconds)
 # Then initialize the database
 ./init-database.sh
 ```
+
+**Note:** See [SWITCHING_APIS.md](SWITCHING_APIS.md) for detailed instructions on switching between APIs.
 
 **Note:** Images are built for linux/amd64 architecture and will run via Rosetta 2 on Apple Silicon Macs.
 
