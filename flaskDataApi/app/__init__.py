@@ -11,23 +11,12 @@ from flask import Flask, jsonify
 from flask_cors import CORS
 from flasgger import Swagger
 
-from app.logging_config import configure_logging, get_logger
-from app.middleware.logging import setup_request_logging
-from app.middleware.cors_logging import setup_cors_logging
-
-# Configure logging before anything else
-configure_logging()
-logger = get_logger(__name__)
-
 
 def create_app():
     """
     Flask application factory
     """
     app = Flask(__name__)
-
-    # Set up request/response logging
-    setup_request_logging(app)
 
     # Configure CORS - Load allowed origins from environment variable
     # SECURITY: Never use "*" in production!
@@ -44,17 +33,6 @@ def create_app():
             "CORS wildcard (*) detected! This is insecure and should never be used in production.",
             category=UserWarning
         )
-        logger.warning(
-            "CORS wildcard detected in configuration",
-            allowed_origins=allowed_origins,
-            security_risk=True
-        )
-
-    logger.info(
-        "CORS configured",
-        allowed_origins=allowed_origins,
-        supports_credentials=True
-    )
 
     CORS(
         app,
@@ -65,9 +43,6 @@ def create_app():
             "supports_credentials": True
         }}
     )
-
-    # Set up CORS logging (after CORS is configured)
-    setup_cors_logging(app, allowed_origins)
 
     # Configure Swagger/OpenAPI documentation
     swagger_config = {
@@ -114,8 +89,6 @@ def create_app():
     app.register_blueprint(artists_bp)
     app.register_blueprint(songs_bp)
 
-    logger.info("Blueprints registered", blueprints=["artists", "songs"])
-
     # Root endpoint
     @app.route('/')
     def root():
@@ -136,12 +109,5 @@ def create_app():
     def health_check():
         """Health check endpoint"""
         return jsonify({"status": "healthy"})
-
-    # Log application startup
-    logger.info(
-        "flaskDataApi initialized",
-        version="1.0.0",
-        endpoints=["/", "/health", "/v1/artists", "/v1/songs"]
-    )
 
     return app
