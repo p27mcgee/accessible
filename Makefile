@@ -1,5 +1,6 @@
 .PHONY: help build build-fast-data-api build-flask-data-api build-ui tag push clean version \
-	db-start db-stop db-status db-init db-clean db-logs db-shell
+	db-start db-stop db-status db-init db-clean db-logs db-shell \
+	authdb-start authdb-stop authdb-status authdb-init authdb-clean authdb-logs authdb-shell
 
 # Extract version from pyproject.toml
 # Try Python 3.11+ tomllib first, fallback to grep
@@ -29,6 +30,15 @@ DB_CONTAINER := sqlserver-dev
 DB_IMAGE := mcr.microsoft.com/mssql/server:2022-latest
 DB_PASSWORD := YourStrong@Passw0rd
 DB_VOLUME := sqlserver-data
+
+# PostgreSQL Auth Database configuration (for dev/test)
+AUTHDB_CONTAINER := postgres-auth-dev
+AUTHDB_IMAGE := postgres:16-alpine
+AUTHDB_USER := postgres
+AUTHDB_PASSWORD := authdbpassword
+AUTHDB_NAME := auth_db
+AUTHDB_PORT := 5432
+AUTHDB_VOLUME := postgres-auth-data
 
 help:
 	@echo "Accessible Build System"
@@ -250,3 +260,119 @@ db-shell:
 	@echo ""
 	@docker exec -it $(DB_CONTAINER) /opt/mssql-tools18/bin/sqlcmd \
 		-S localhost -U sa -P "$(DB_PASSWORD)" -C
+
+#===============================================================================
+# PostgreSQL Auth Database Targets
+#===============================================================================
+
+authdb-start:
+	@echo "Starting PostgreSQL auth database container..."
+	@if docker ps -a --format '{{.Names}}' | grep -q "^$(AUTHDB_CONTAINER)$$"; then \
+		if docker ps --format '{{.Names}}' | grep -q "^$(AUTHDB_CONTAINER)$$"; then \
+			echo "✓ PostgreSQL container already running"; \
+		else \
+			echo "Starting existing PostgreSQL container..."; \
+			docker start $(AUTHDB_CONTAINER); \
+			echo "Waiting for PostgreSQL to be ready..."; \
+			sleep 5; \
+			echo "✓ PostgreSQL container started"; \
+		fi \
+	else \
+		echo "Creating new PostgreSQL container..."; \
+		docker run -d \
+			--name $(AUTHDB_CONTAINER) \
+			-p $(AUTHDB_PORT):5432 \
+			-e POSTGRES_DB=$(AUTHDB_NAME) \
+			-e POSTGRES_USER=$(AUTHDB_USER) \
+			-e POSTGRES_PASSWORD=$(AUTHDB_PASSWORD) \
+			-v $(AUTHDB_VOLUME):/var/lib/postgresql/data \
+			-v $$(pwd)/sql/auth_schema.sql:/docker-entrypoint-initdb.d/01-schema.sql \
+			-v $$(pwd)/sql/auth_seed.sql:/docker-entrypoint-initdb.d/02-seed.sql \
+			$(AUTHDB_IMAGE); \
+		echo "Waiting for PostgreSQL to initialize..."; \
+		sleep 5; \
+		echo "✓ PostgreSQL container created and running"; \
+	fi
+
+authdb-stop:
+	@echo "Stopping PostgreSQL auth database container..."
+	@if docker ps --format '{{.Names}}' | grep -q "^$(AUTHDB_CONTAINER)$$"; then \
+		docker stop $(AUTHDB_CONTAINER); \
+		echo "✓ PostgreSQL container stopped"; \
+	else \
+		echo "PostgreSQL container is not running"; \
+	fi
+
+authdb-status:
+	@echo "Checking PostgreSQL auth database status..."
+	@if ! docker ps -a --format '{{.Names}}' | grep -q "^$(AUTHDB_CONTAINER)$$"; then \
+		echo "❌ PostgreSQL container does not exist"; \
+		echo "Run 'make authdb-start' to create it"; \
+		exit 2; \
+	elif ! docker ps --format '{{.Names}}' | grep -q "^$(AUTHDB_CONTAINER)$$"; then \
+		echo "❌ PostgreSQL container exists but is not running"; \
+		echo "Run 'make authdb-start' to start it"; \
+		exit 1; \
+	else \
+		echo "Checking PostgreSQL readiness..."; \
+		if docker exec $(AUTHDB_CONTAINER) pg_isready -U $(AUTHDB_USER) > /dev/null 2>&1; then \
+			echo "✓ PostgreSQL is ready and accepting connections"; \
+			echo ""; \
+			echo "Connection info:"; \
+			echo "  Host: localhost"; \
+			echo "  Port: $(AUTHDB_PORT)"; \
+			echo "  Database: $(AUTHDB_NAME)"; \
+			echo "  User: $(AUTHDB_USER)"; \
+		else \
+			echo "⚠ PostgreSQL container is running but not ready yet"; \
+			echo "Wait a few seconds and try again"; \
+			exit 1; \
+		fi \
+	fi
+
+authdb-init:
+	@echo "Checking PostgreSQL auth database initialization..."
+	@if ! docker ps --format '{{.Names}}' | grep -q "^$(AUTHDB_CONTAINER)$$"; then \
+		echo "❌ PostgreSQL container is not running"; \
+		echo "Run 'make authdb-start' first"; \
+		exit 1; \
+	fi
+	@echo "Verifying database and tables..."
+	@docker exec $(AUTHDB_CONTAINER) psql -U $(AUTHDB_USER) -d $(AUTHDB_NAME) -c "\dt" | grep users > /dev/null 2>&1 && \
+		echo "✓ users table exists" || echo "❌ users table not found"
+	@docker exec $(AUTHDB_CONTAINER) psql -U $(AUTHDB_USER) -d $(AUTHDB_NAME) -c "\dt" | grep refresh_tokens > /dev/null 2>&1 && \
+		echo "✓ refresh_tokens table exists" || echo "❌ refresh_tokens table not found"
+	@echo ""
+	@echo "User count:"
+	@docker exec $(AUTHDB_CONTAINER) psql -U $(AUTHDB_USER) -d $(AUTHDB_NAME) -t -c "SELECT COUNT(*) || ' users' FROM users;"
+	@echo ""
+	@echo "✓ PostgreSQL auth database is initialized"
+
+authdb-clean:
+	@echo "⚠️  WARNING: This will DELETE the PostgreSQL auth database container and ALL DATA"
+	@echo "This includes all user accounts and authentication data"
+	@echo ""
+ifndef FORCE
+	@echo "To confirm, run: make authdb-clean FORCE=yes"
+	@exit 1
+endif
+	@echo "Stopping PostgreSQL container..."
+	-docker stop $(AUTHDB_CONTAINER) 2>/dev/null || true
+	@echo "Removing PostgreSQL container..."
+	-docker rm $(AUTHDB_CONTAINER) 2>/dev/null || true
+	@echo "Waiting for container removal..."
+	@while docker ps -a --format '{{.Names}}' | grep -q "^$(AUTHDB_CONTAINER)$$"; do \
+		sleep 0.5; \
+	done
+	@echo "Removing PostgreSQL volume..."
+	-docker volume rm $(AUTHDB_VOLUME) 2>/dev/null || true
+	@echo "✓ PostgreSQL container and volume removed"
+
+authdb-logs:
+	@docker logs -f $(AUTHDB_CONTAINER)
+
+authdb-shell:
+	@echo "Opening psql shell to auth database..."
+	@echo "Tip: Run '\dt' to list tables, '\du' to list users"
+	@echo ""
+	@docker exec -it $(AUTHDB_CONTAINER) psql -U $(AUTHDB_USER) -d $(AUTHDB_NAME)

@@ -8,7 +8,8 @@ This microservice provides REST API endpoints:
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routers import artists, songs
+from app.routers import artists, songs, auth, admin
+from auth_lib.database import create_tables
 
 # Create FastAPI application
 app = FastAPI(
@@ -29,8 +30,17 @@ app.add_middleware(
 )
 
 # Include routers
+app.include_router(auth.router)
+app.include_router(admin.router)
 app.include_router(artists.router)
 app.include_router(songs.router)
+
+
+# Startup event to create auth database tables
+@app.on_event("startup")
+async def startup_event():
+    """Create database tables on startup if they don't exist"""
+    create_tables()
 
 
 @app.get("/")
@@ -39,8 +49,10 @@ def root():
     return {
         "name": "fastDataApi",
         "version": "1.0.0",
-        "description": "Python data microservice",
+        "description": "Python data microservice with authentication",
         "endpoints": {
+            "auth": "/auth",
+            "admin": "/admin/users",
             "artists": "/v1/artists",
             "songs": "/v1/songs",
             "docs": "/swagger-ui.html",

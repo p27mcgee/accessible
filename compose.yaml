@@ -1,6 +1,7 @@
-# Database is managed independently via Makefile for dev/test
-# Run: make db-start && make db-init
-# In production, database is external (managed service)
+# Both databases are managed independently via Makefile for dev/test
+# SQL Server (data): make db-start && make db-init
+# PostgreSQL (auth): make authdb-start (auto-initializes)
+# In production, databases are external (managed services)
 
 services:
   fastDataApi:
@@ -9,11 +10,18 @@ services:
     container_name: accessible-fast-data-api
     platform: linux/amd64
     environment:
+      # SQL Server (data database)
       - DB_SERVER=host.docker.internal
       - DB_PORT=1433
       - DB_NAME=starsongs
       - DB_USER=sa
       - DB_PASSWORD=YourStrong@Passw0rd
+      # PostgreSQL (auth database)
+      - POSTGRES_AUTH_DB_URL=postgresql://postgres:authdbpassword@host.docker.internal:5432/auth_db
+      # JWT Configuration
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-your-secret-key-change-in-production}
+      - ACCESS_TOKEN_EXPIRE_MINUTES=15
+      - REFRESH_TOKEN_EXPIRE_DAYS=7
     ports:
       - "8000:8000"
     restart: unless-stopped
@@ -24,11 +32,18 @@ services:
     container_name: accessible-flask-data-api
     platform: linux/amd64
     environment:
+      # SQL Server (data database)
       - DB_SERVER=host.docker.internal
       - DB_PORT=1433
       - DB_NAME=starsongs
       - DB_USER=sa
       - DB_PASSWORD=YourStrong@Passw0rd
+      # PostgreSQL (auth database)
+      - POSTGRES_AUTH_DB_URL=postgresql://postgres:authdbpassword@host.docker.internal:5432/auth_db
+      # JWT Configuration
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-your-secret-key-change-in-production}
+      - ACCESS_TOKEN_EXPIRE_MINUTES=15
+      - REFRESH_TOKEN_EXPIRE_DAYS=7
     ports:
       - "8001:8001"
     restart: unless-stopped
@@ -40,6 +55,8 @@ services:
     environment:
       # Configure which API to use: fastDataApi:8000 or flaskDataApi:8001
       - NEXT_PUBLIC_SONGDATA_API_URL=${API_SERVICE_URL:-http://fastDataApi:8000}
+      # Auth API URL (server-side only, same as SONGDATA_API_URL)
+      - AUTH_API_URL=${API_SERVICE_URL:-http://fastDataApi:8000}
     ports:
       - "80:3000"
     restart: unless-stopped
