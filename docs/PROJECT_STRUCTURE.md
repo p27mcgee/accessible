@@ -53,12 +53,18 @@ accessible/
 ├── build-versioned.sh         # Script to build with version tags
 ├── publish-images.sh          # Script to publish versioned images
 ├── setup-env.sh               # Environment setup helper
+├── docs/                      # Documentation directory
+│   ├── API.md                # API features (pagination)
+│   ├── BUILD.md              # Building and publishing images
+│   ├── CONFIGURATION.md      # Environment and configuration
+│   ├── DATABASE.md           # Database management
+│   ├── PROJECT_STRUCTURE.md  # Architecture (this file)
+│   ├── SWITCHING_APIS.md     # Switching between FastAPI/Flask
+│   └── TODO.md               # Production readiness roadmap
 ├── .env                       # Environment variables (gitignored)
 ├── .env.example               # Environment variables template
 ├── .gitignore                 # Git ignore patterns
-├── README.md                  # Main documentation
-├── GETTING_STARTED.md         # Quick start guide
-└── PROJECT_STRUCTURE.md       # This file
+└── README.md                  # Main documentation and quick start
 ```
 
 ## Technology Stack

@@ -2,8 +2,8 @@
 Pydantic schemas for the Accessible API.
 Uses Python idiomatic naming conventions (snake_case).
 """
-from pydantic import BaseModel, ConfigDict
-from typing import Optional
+from pydantic import BaseModel, ConfigDict, Field
+from typing import Optional, List, Generic, TypeVar
 from datetime import date
 
 
@@ -71,3 +71,34 @@ class Song(SongBase):
             url=song_model.URL,
             distance=song_model.distance
         )
+
+
+# Generic type for paginated responses
+T = TypeVar('T')
+
+
+class PaginationMetadata(BaseModel):
+    """Pagination metadata"""
+    page: int = Field(..., description="Current page number (1-indexed)", ge=1)
+    page_size: int = Field(..., description="Number of items per page", ge=1, le=100)
+    total_items: int = Field(..., description="Total number of items across all pages", ge=0)
+    total_pages: int = Field(..., description="Total number of pages", ge=0)
+    has_next: bool = Field(..., description="Whether there is a next page")
+    has_prev: bool = Field(..., description="Whether there is a previous page")
+
+
+class PaginatedResponse(BaseModel, Generic[T]):
+    """Generic paginated response wrapper"""
+    items: List[T] = Field(..., description="List of items for the current page")
+    pagination: PaginationMetadata = Field(..., description="Pagination metadata")
+
+
+# Type aliases for specific paginated responses
+class PaginatedArtists(PaginatedResponse[Artist]):
+    """Paginated list of artists"""
+    pass
+
+
+class PaginatedSongs(PaginatedResponse[Song]):
+    """Paginated list of songs"""
+    pass

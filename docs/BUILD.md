@@ -483,7 +483,7 @@ docker images | grep accessible
 
 ## Next Steps
 
-- See [README.md](README.md) for deployment instructions
+- See [README.md](../README.md) for quick start guide and deployment
 - See [SWITCHING_APIS.md](SWITCHING_APIS.md) for API selection
-- See [GETTING_STARTED.md](GETTING_STARTED.md) for quick start guide
+- See [CONFIGURATION.md](CONFIGURATION.md) for environment configuration
 - See [DATABASE.md](DATABASE.md) for database management
