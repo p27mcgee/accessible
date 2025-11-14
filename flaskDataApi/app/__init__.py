@@ -5,6 +5,8 @@ This microservice provides REST API endpoints:
 - /v1/artists - Artist CRUD operations
 - /v1/songs   - Song CRUD operations
 """
+import os
+import warnings
 from flask import Flask, jsonify
 from flask_cors import CORS
 from flasgger import Swagger
@@ -16,8 +18,31 @@ def create_app():
     """
     app = Flask(__name__)
 
-    # Configure CORS
-    CORS(app, resources={r"/*": {"origins": "*"}})
+    # Configure CORS - Load allowed origins from environment variable
+    # SECURITY: Never use "*" in production!
+    cors_origins_str = os.getenv(
+        "CORS_ORIGINS",
+        "http://localhost,http://localhost:80,http://localhost:3000"  # Development default
+    )
+    # Parse comma-separated origins into list
+    allowed_origins = [origin.strip() for origin in cors_origins_str.split(",") if origin.strip()]
+
+    # Validate that wildcard is not used in production
+    if "*" in allowed_origins:
+        warnings.warn(
+            "CORS wildcard (*) detected! This is insecure and should never be used in production.",
+            category=UserWarning
+        )
+
+    CORS(
+        app,
+        resources={r"/*": {
+            "origins": allowed_origins,
+            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+            "allow_headers": ["Content-Type", "Authorization"],
+            "supports_credentials": True
+        }}
+    )
 
     # Configure Swagger/OpenAPI documentation
     swagger_config = {

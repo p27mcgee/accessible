@@ -2,7 +2,7 @@
 Song REST API endpoints
 
 API endpoints:
-- GET    /v1/songs      - List all songs
+- GET    /v1/songs      - List all songs (paginated)
 - GET    /v1/songs/{id} - Get one song
 - POST   /v1/songs      - Create new song
 - PUT    /v1/songs/{id} - Update song
@@ -14,7 +14,7 @@ from app.models import Song, Artist
 from app.schemas import (
     song_schema, songs_schema,
     song_create_schema, song_update_schema,
-    song_model_to_dict
+    song_model_to_dict, create_paginated_response
 )
 from marshmallow import ValidationError
 
@@ -24,35 +24,90 @@ songs_bp = Blueprint('songs', __name__, url_prefix='/v1/songs')
 @songs_bp.route('', methods=['GET'])
 def get_all_songs():
     """
-    Get all songs
+    Get all songs with pagination
     ---
     tags:
       - songs
+    parameters:
+      - name: page
+        in: query
+        type: integer
+        minimum: 1
+        default: 1
+        description: Page number (1-indexed)
+      - name: page_size
+        in: query
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 10
+        description: Number of items per page (max 100)
     responses:
       200:
-        description: List of all songs
+        description: Paginated list of songs
         schema:
-          type: array
-          items:
-            type: object
-            properties:
-              id:
-                type: integer
-              title:
-                type: string
-              artist_id:
-                type: integer
-              release_date:
-                type: string
-                format: date
-              url:
-                type: string
-              distance:
-                type: number
+          type: object
+          properties:
+            items:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  title:
+                    type: string
+                  artist_id:
+                    type: integer
+                  release_date:
+                    type: string
+                    format: date
+                  url:
+                    type: string
+                  distance:
+                    type: number
+            pagination:
+              type: object
+              properties:
+                page:
+                  type: integer
+                page_size:
+                  type: integer
+                total_items:
+                  type: integer
+                total_pages:
+                  type: integer
+                has_next:
+                  type: boolean
+                has_prev:
+                  type: boolean
     """
-    songs = db.session.query(Song).all()
+    # Get pagination parameters
+    page = request.args.get('page', 1, type=int)
+    page_size = request.args.get('page_size', 10, type=int)
+
+    # Validate parameters
+    if page < 1:
+        return jsonify({"detail": "Page must be >= 1"}), 400
+    if page_size < 1 or page_size > 100:
+        return jsonify({"detail": "Page size must be between 1 and 100"}), 400
+
+    # Get total count
+    total_items = db.session.query(Song).count()
+
+    # Calculate offset
+    offset = (page - 1) * page_size
+
+    # Get paginated items
+    songs = db.session.query(Song).offset(offset).limit(page_size).all()
+
+    # Convert to dict format
     songs_dict = [song_model_to_dict(song) for song in songs]
-    return jsonify(songs_schema.dump(songs_dict)), 200
+
+    # Create paginated response
+    response = create_paginated_response(songs_dict, songs_schema, page, page_size, total_items)
+
+    return jsonify(response), 200
 
 
 @songs_bp.route('/<int:id>', methods=['GET'])

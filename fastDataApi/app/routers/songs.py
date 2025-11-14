@@ -2,19 +2,23 @@
 Song REST API endpoints
 
 API endpoints:
-- GET    /v1/songs      - List all songs
+- GET    /v1/songs      - List all songs (paginated)
 - GET    /v1/songs/{id} - Get one song
 - POST   /v1/songs      - Create new song
 - PUT    /v1/songs/{id} - Update song
 - DELETE /v1/songs/{id} - Delete song
 """
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from typing import List
+from math import ceil
 
 from app.database import get_db
 from app.models import Song as SongModel, Artist as ArtistModel
-from app.schemas import Song, SongCreate, SongUpdate
+from app.schemas import (
+    Song, SongCreate, SongUpdate,
+    PaginatedSongs, PaginationMetadata
+)
 
 router = APIRouter(
     prefix="/v1/songs",
@@ -22,11 +26,44 @@ router = APIRouter(
 )
 
 
-@router.get("", response_model=List[Song])
-def get_all_songs(db: Session = Depends(get_db)):
-    """Get all songs"""
-    songs = db.query(SongModel).all()
-    return [Song.from_orm(song) for song in songs]
+@router.get("", response_model=PaginatedSongs)
+def get_all_songs(
+    page: int = Query(1, ge=1, description="Page number (1-indexed)"),
+    page_size: int = Query(10, ge=1, le=100, description="Number of items per page (max 100)"),
+    db: Session = Depends(get_db)
+):
+    """
+    Get all songs with pagination
+
+    - **page**: Page number starting from 1
+    - **page_size**: Number of items per page (default: 10, max: 100)
+
+    Returns paginated list of songs with pagination metadata.
+    """
+    # Get total count
+    total_items = db.query(SongModel).count()
+
+    # Calculate pagination
+    total_pages = ceil(total_items / page_size) if total_items > 0 else 0
+    offset = (page - 1) * page_size
+
+    # Get paginated items
+    songs = db.query(SongModel).offset(offset).limit(page_size).all()
+
+    # Convert to schema
+    items = [Song.from_orm(song) for song in songs]
+
+    # Build pagination metadata
+    pagination = PaginationMetadata(
+        page=page,
+        page_size=page_size,
+        total_items=total_items,
+        total_pages=total_pages,
+        has_next=page < total_pages,
+        has_prev=page > 1
+    )
+
+    return PaginatedSongs(items=items, pagination=pagination)
 
 
 @router.get("/{id}", response_model=Song)

@@ -2,19 +2,23 @@
 Artist REST API endpoints
 
 API endpoints:
-- GET    /v1/artists      - List all artists
+- GET    /v1/artists      - List all artists (paginated)
 - GET    /v1/artists/{id} - Get one artist
 - POST   /v1/artists      - Create new artist
 - PUT    /v1/artists/{id} - Update artist
 - DELETE /v1/artists/{id} - Delete artist
 """
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from typing import List
+from math import ceil
 
 from app.database import get_db
 from app.models import Artist as ArtistModel
-from app.schemas import Artist, ArtistCreate, ArtistUpdate
+from app.schemas import (
+    Artist, ArtistCreate, ArtistUpdate,
+    PaginatedArtists, PaginationMetadata
+)
 
 router = APIRouter(
     prefix="/v1/artists",
@@ -22,11 +26,41 @@ router = APIRouter(
 )
 
 
-@router.get("", response_model=List[Artist])
-def get_all_artists(db: Session = Depends(get_db)):
-    """Get all artists"""
-    artists = db.query(ArtistModel).all()
-    return artists
+@router.get("", response_model=PaginatedArtists)
+def get_all_artists(
+    page: int = Query(1, ge=1, description="Page number (1-indexed)"),
+    page_size: int = Query(10, ge=1, le=100, description="Number of items per page (max 100)"),
+    db: Session = Depends(get_db)
+):
+    """
+    Get all artists with pagination
+
+    - **page**: Page number starting from 1
+    - **page_size**: Number of items per page (default: 10, max: 100)
+
+    Returns paginated list of artists with pagination metadata.
+    """
+    # Get total count
+    total_items = db.query(ArtistModel).count()
+
+    # Calculate pagination
+    total_pages = ceil(total_items / page_size) if total_items > 0 else 0
+    offset = (page - 1) * page_size
+
+    # Get paginated items
+    artists = db.query(ArtistModel).offset(offset).limit(page_size).all()
+
+    # Build pagination metadata
+    pagination = PaginationMetadata(
+        page=page,
+        page_size=page_size,
+        total_items=total_items,
+        total_pages=total_pages,
+        has_next=page < total_pages,
+        has_prev=page > 1
+    )
+
+    return PaginatedArtists(items=artists, pagination=pagination)
 
 
 @router.get("/{id}", response_model=Artist)
