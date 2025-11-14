@@ -6,10 +6,18 @@ from sqlalchemy import event
 from sqlalchemy.orm import DeclarativeBase
 from urllib.parse import quote_plus
 import os
-import logging
+import time
+from typing import Dict, Any
+import structlog
 
-# Configure logging
-logger = logging.getLogger(__name__)
+# Get structured logger
+logger = structlog.get_logger(__name__)
+
+# Slow query threshold in milliseconds
+SLOW_QUERY_THRESHOLD_MS = int(os.getenv("SLOW_QUERY_THRESHOLD_MS", "100"))
+
+# Dictionary to track query start times
+_query_start_times: Dict[Any, float] = {}
 
 # Create base class for models
 class Base(DeclarativeBase):
@@ -77,14 +85,86 @@ def init_db(app):
     @event.listens_for(db.engine, "connect")
     def receive_connect(dbapi_conn, connection_record):
         """Log when a new connection is created"""
-        logger.debug("Database connection established")
+        logger.debug(
+            "Database connection established",
+            connection_id=id(connection_record)
+        )
 
     @event.listens_for(db.engine, "checkout")
     def receive_checkout(dbapi_conn, connection_record, connection_proxy):
         """Log when a connection is checked out from the pool"""
-        logger.debug("Connection checked out from pool")
+        pool = db.engine.pool
+        logger.debug(
+            "Connection checked out from pool",
+            connection_id=id(connection_record),
+            pool_size=pool.size(),
+            checked_out=pool.checkedout(),
+            overflow=pool.overflow()
+        )
 
     @event.listens_for(db.engine, "checkin")
     def receive_checkin(dbapi_conn, connection_record):
         """Log when a connection is returned to the pool"""
-        logger.debug("Connection returned to pool")
+        pool = db.engine.pool
+        logger.debug(
+            "Connection returned to pool",
+            connection_id=id(connection_record),
+            pool_size=pool.size(),
+            checked_out=pool.checkedout()
+        )
+
+    # Query performance monitoring
+    @event.listens_for(db.engine, "before_cursor_execute")
+    def before_cursor_execute(conn, cursor, statement, parameters, context, executemany):
+        """
+        Track query start time for performance monitoring
+        """
+        conn.info.setdefault('query_start_time', []).append(time.time())
+
+        # Log query start (debug level)
+        logger.debug(
+            "Executing SQL query",
+            statement=statement[:200] if len(statement) > 200 else statement,  # Truncate long queries
+            parameters=str(parameters)[:100] if parameters else None
+        )
+
+    @event.listens_for(db.engine, "after_cursor_execute")
+    def after_cursor_execute(conn, cursor, statement, parameters, context, executemany):
+        """
+        Log query execution time and detect slow queries
+        """
+        # Calculate query duration
+        query_start_times = conn.info.get('query_start_time', [])
+        if query_start_times:
+            start_time = query_start_times.pop()
+            duration_ms = (time.time() - start_time) * 1000
+
+            # Determine log level based on duration
+            if duration_ms > SLOW_QUERY_THRESHOLD_MS:
+                logger.warning(
+                    "Slow query detected",
+                    duration_ms=round(duration_ms, 2),
+                    statement=statement[:200] if len(statement) > 200 else statement,
+                    threshold_ms=SLOW_QUERY_THRESHOLD_MS,
+                    is_slow=True
+                )
+            else:
+                logger.debug(
+                    "Query completed",
+                    duration_ms=round(duration_ms, 2)
+                )
+
+    # Handle database errors
+    @event.listens_for(db.engine, "handle_error")
+    def handle_error(exception_context):
+        """
+        Log database errors with context
+        """
+        logger.error(
+            "Database error occurred",
+            error_type=type(exception_context.original_exception).__name__,
+            error_message=str(exception_context.original_exception),
+            statement=exception_context.statement[:200] if exception_context.statement else None,
+            parameters=str(exception_context.parameters)[:100] if exception_context.parameters else None,
+            exc_info=True
+        )

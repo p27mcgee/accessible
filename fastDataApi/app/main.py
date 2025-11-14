@@ -10,6 +10,13 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.routers import artists, songs, health
+from app.logging_config import configure_logging, get_logger
+from app.middleware.logging import RequestLoggingMiddleware
+from app.middleware.cors_logging import CORSLoggingMiddleware
+
+# Configure logging before anything else
+configure_logging()
+logger = get_logger(__name__)
 
 # Create FastAPI application
 app = FastAPI(
@@ -19,6 +26,9 @@ app = FastAPI(
     docs_url="/swagger-ui.html",
     redoc_url="/api-docs"
 )
+
+# Add request logging middleware (must be added first)
+app.add_middleware(RequestLoggingMiddleware)
 
 # Configure CORS - Load allowed origins from environment variable
 # SECURITY: Never use "*" in production!
@@ -36,6 +46,17 @@ if "*" in allowed_origins:
         "CORS wildcard (*) detected! This is insecure and should never be used in production.",
         SecurityWarning
     )
+    logger.warning(
+        "CORS wildcard detected in configuration",
+        allowed_origins=allowed_origins,
+        security_risk=True
+    )
+
+logger.info(
+    "CORS configured",
+    allowed_origins=allowed_origins,
+    allow_credentials=True
+)
 
 app.add_middleware(
     CORSMiddleware,
@@ -45,10 +66,31 @@ app.add_middleware(
     allow_headers=["Content-Type", "Authorization"],
 )
 
+# Add CORS logging middleware (after CORS middleware)
+app.add_middleware(CORSLoggingMiddleware, allowed_origins=allowed_origins)
+
 # Include routers
 app.include_router(artists.router)
 app.include_router(songs.router)
 app.include_router(health.router)
+
+logger.info("Routers registered", routers=["artists", "songs", "health"])
+
+
+@app.on_event("startup")
+async def startup_event():
+    """Log application startup"""
+    logger.info(
+        "fastDataApi starting up",
+        version="1.0.0",
+        endpoints=["GET /", "GET /health", "/v1/artists", "/v1/songs"]
+    )
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Log application shutdown"""
+    logger.info("fastDataApi shutting down")
 
 
 @app.get("/")

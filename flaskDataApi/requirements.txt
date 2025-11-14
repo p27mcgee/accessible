@@ -20,3 +20,7 @@ pyodbc==5.0.1
 
 # Python 3.11 compatibility
 python-dateutil==2.8.2
+
+# Structured logging
+structlog==24.1.0
+python-json-logger==2.0.7

@@ -19,6 +19,10 @@ from app.schemas import (
     Song, SongCreate, SongUpdate,
     PaginatedSongs, PaginationMetadata
 )
+from app.utils.logger import get_logger_with_context, log_operation
+
+# Get logger
+logger = get_logger_with_context(__name__)
 
 router = APIRouter(
     prefix="/v1/songs",
@@ -40,6 +44,15 @@ def get_all_songs(
 
     Returns paginated list of songs with pagination metadata.
     """
+    # Log operation
+    logger.info(
+        "Fetching paginated songs",
+        operation="list",
+        entity_type="song",
+        page=page,
+        page_size=page_size
+    )
+
     # Get total count
     total_items = db.query(SongModel).count()
 
@@ -63,28 +76,73 @@ def get_all_songs(
         has_prev=page > 1
     )
 
+    # Log result
+    logger.info(
+        "Songs retrieved successfully",
+        operation="list",
+        entity_type="song",
+        items_returned=len(items),
+        total_items=total_items,
+        page=page
+    )
+
     return PaginatedSongs(items=items, pagination=pagination)
 
 
 @router.get("/{id}", response_model=Song)
 def get_song(id: int, db: Session = Depends(get_db)):
     """Get one song by ID"""
+    logger.info(
+        "Fetching song by ID",
+        operation="read",
+        entity_type="song",
+        entity_id=id
+    )
+
     song = db.query(SongModel).filter(SongModel.id == id).first()
     if song is None:
+        logger.warning(
+            "Song not found",
+            operation="read",
+            entity_type="song",
+            entity_id=id
+        )
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Song with id {id} not found"
         )
+
+    logger.info(
+        "Song retrieved successfully",
+        operation="read",
+        entity_type="song",
+        entity_id=id,
+        title=song.title
+    )
     return Song.from_orm(song)
 
 
 @router.post("", response_model=Song, status_code=status.HTTP_201_CREATED)
 def create_song(song: SongCreate, db: Session = Depends(get_db)):
     """Create a new song"""
+    logger.info(
+        "Creating new song",
+        operation="create",
+        entity_type="song",
+        title=song.title,
+        artist_id=song.artist_id
+    )
+
     # Validate artist exists if artist_id is provided
     if song.artist_id is not None:
         artist = db.query(ArtistModel).filter(ArtistModel.id == song.artist_id).first()
         if artist is None:
+            logger.warning(
+                "Artist not found for song creation",
+                operation="create",
+                entity_type="song",
+                artist_id=song.artist_id
+            )
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Artist with id {song.artist_id} not found"
@@ -101,16 +159,39 @@ def create_song(song: SongCreate, db: Session = Depends(get_db)):
     db.add(db_song)
     db.commit()
     db.refresh(db_song)
+
+    logger.info(
+        "Song created successfully",
+        operation="create",
+        entity_type="song",
+        entity_id=db_song.id,
+        title=db_song.title
+    )
     return Song.from_orm(db_song)
 
 
 @router.put("/{id}", response_model=Song)
 def update_song(id: int, song: SongUpdate, db: Session = Depends(get_db)):
     """Update an existing song or create if not exists"""
+    logger.info(
+        "Updating song",
+        operation="update",
+        entity_type="song",
+        entity_id=id,
+        title=song.title
+    )
+
     # Validate artist exists if artist_id is provided
     if song.artist_id is not None:
         artist = db.query(ArtistModel).filter(ArtistModel.id == song.artist_id).first()
         if artist is None:
+            logger.warning(
+                "Artist not found for song update",
+                operation="update",
+                entity_type="song",
+                entity_id=id,
+                artist_id=song.artist_id
+            )
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Artist with id {song.artist_id} not found"
@@ -120,6 +201,13 @@ def update_song(id: int, song: SongUpdate, db: Session = Depends(get_db)):
 
     if db_song is None:
         # Create new song with specified ID
+        logger.info(
+            "Song not found, creating new song with specified ID",
+            operation="update",
+            entity_type="song",
+            entity_id=id,
+            upsert=True
+        )
         db_song = SongModel(
             id=id,
             title=song.title,
@@ -139,19 +227,49 @@ def update_song(id: int, song: SongUpdate, db: Session = Depends(get_db)):
 
     db.commit()
     db.refresh(db_song)
+
+    logger.info(
+        "Song updated successfully",
+        operation="update",
+        entity_type="song",
+        entity_id=db_song.id,
+        title=db_song.title
+    )
     return Song.from_orm(db_song)
 
 
 @router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_song(id: int, db: Session = Depends(get_db)):
     """Delete a song"""
+    logger.info(
+        "Deleting song",
+        operation="delete",
+        entity_type="song",
+        entity_id=id
+    )
+
     db_song = db.query(SongModel).filter(SongModel.id == id).first()
     if db_song is None:
+        logger.warning(
+            "Song not found for deletion",
+            operation="delete",
+            entity_type="song",
+            entity_id=id
+        )
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Song with id {id} not found"
         )
 
+    song_title = db_song.title
     db.delete(db_song)
     db.commit()
+
+    logger.info(
+        "Song deleted successfully",
+        operation="delete",
+        entity_type="song",
+        entity_id=id,
+        title=song_title
+    )
     return None
