@@ -18,6 +18,10 @@ from app.schemas import (
 )
 from marshmallow import ValidationError
 from flasgger import swag_from
+from app.utils.logger import get_logger_with_context
+
+# Get logger
+logger = get_logger_with_context(__name__)
 
 artists_bp = Blueprint('artists', __name__, url_prefix='/v1/artists')
 
@@ -78,6 +82,15 @@ def get_all_artists():
     page = request.args.get('page', 1, type=int)
     page_size = request.args.get('page_size', 10, type=int)
 
+    # Log operation
+    logger.info(
+        "Fetching paginated artists",
+        operation="list",
+        entity_type="artist",
+        page=page,
+        page_size=page_size
+    )
+
     # Validate parameters
     if page < 1:
         return jsonify({"detail": "Page must be >= 1"}), 400
@@ -95,6 +108,16 @@ def get_all_artists():
 
     # Create paginated response
     response = create_paginated_response(artists, artists_schema, page, page_size, total_items)
+
+    # Log result
+    logger.info(
+        "Artists retrieved successfully",
+        operation="list",
+        entity_type="artist",
+        items_returned=len(artists),
+        total_items=total_items,
+        page=page
+    )
 
     return jsonify(response), 200
 
@@ -125,9 +148,30 @@ def get_artist(id):
       404:
         description: Artist not found
     """
+    logger.info(
+        "Fetching artist by ID",
+        operation="read",
+        entity_type="artist",
+        entity_id=id
+    )
+
     artist = db.session.query(Artist).filter(Artist.id == id).first()
     if artist is None:
+        logger.warning(
+            "Artist not found",
+            operation="read",
+            entity_type="artist",
+            entity_id=id
+        )
         abort(404, description=f"Artist with id {id} not found")
+
+    logger.info(
+        "Artist retrieved successfully",
+        operation="read",
+        entity_type="artist",
+        entity_id=id,
+        name=artist.name
+    )
     return jsonify(artist_schema.dump(artist)), 200
 
 
@@ -167,10 +211,25 @@ def create_artist():
     except ValidationError as err:
         return jsonify({"detail": "Validation error", "errors": err.messages}), 400
 
+    logger.info(
+        "Creating new artist",
+        operation="create",
+        entity_type="artist",
+        name=data['name']
+    )
+
     db_artist = Artist(name=data['name'])
     db.session.add(db_artist)
     db.session.commit()
     db.session.refresh(db_artist)
+
+    logger.info(
+        "Artist created successfully",
+        operation="create",
+        entity_type="artist",
+        entity_id=db_artist.id,
+        name=db_artist.name
+    )
 
     return jsonify(artist_schema.dump(db_artist)), 201
 
@@ -216,10 +275,25 @@ def update_artist(id):
     except ValidationError as err:
         return jsonify({"detail": "Validation error", "errors": err.messages}), 400
 
+    logger.info(
+        "Updating artist",
+        operation="update",
+        entity_type="artist",
+        entity_id=id,
+        name=data['name']
+    )
+
     db_artist = db.session.query(Artist).filter(Artist.id == id).first()
 
     if db_artist is None:
         # Create new artist with specified ID
+        logger.info(
+            "Artist not found, creating new artist with specified ID",
+            operation="update",
+            entity_type="artist",
+            entity_id=id,
+            upsert=True
+        )
         db_artist = Artist(id=id, name=data['name'])
         db.session.add(db_artist)
     else:
@@ -228,6 +302,14 @@ def update_artist(id):
 
     db.session.commit()
     db.session.refresh(db_artist)
+
+    logger.info(
+        "Artist updated successfully",
+        operation="update",
+        entity_type="artist",
+        entity_id=db_artist.id,
+        name=db_artist.name
+    )
 
     return jsonify(artist_schema.dump(db_artist)), 200
 
@@ -251,11 +333,33 @@ def delete_artist(id):
       404:
         description: Artist not found
     """
+    logger.info(
+        "Deleting artist",
+        operation="delete",
+        entity_type="artist",
+        entity_id=id
+    )
+
     db_artist = db.session.query(Artist).filter(Artist.id == id).first()
     if db_artist is None:
+        logger.warning(
+            "Artist not found for deletion",
+            operation="delete",
+            entity_type="artist",
+            entity_id=id
+        )
         abort(404, description=f"Artist with id {id} not found")
 
+    artist_name = db_artist.name
     db.session.delete(db_artist)
     db.session.commit()
+
+    logger.info(
+        "Artist deleted successfully",
+        operation="delete",
+        entity_type="artist",
+        entity_id=id,
+        name=artist_name
+    )
 
     return '', 204
