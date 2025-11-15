@@ -2,15 +2,17 @@
  * API client for SongData service
  */
 
-import { Song, Artist } from '@/types';
+import { Song, Artist, PaginatedResponse } from '@/types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_SONGDATA_API_URL || 'http://localhost:8086';
 
 /**
  * Fetch all songs from the songdata API
+ * Note: API returns paginated response, but we extract all items for now
+ * TODO: Implement client-side pagination UI
  */
 export async function getSongs(): Promise<Song[]> {
-  const response = await fetch(`${API_BASE_URL}/v1/songs`, {
+  const response = await fetch(`${API_BASE_URL}/v1/songs?page_size=100`, {
     cache: 'no-store', // Always fetch fresh data
   });
 
@@ -18,7 +20,8 @@ export async function getSongs(): Promise<Song[]> {
     throw new Error(`Failed to fetch songs: ${response.statusText}`);
   }
 
-  return response.json();
+  const data: PaginatedResponse<Song> = await response.json();
+  return data.items;
 }
 
 /**

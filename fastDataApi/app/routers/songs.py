@@ -60,8 +60,8 @@ def get_all_songs(
     total_pages = ceil(total_items / page_size) if total_items > 0 else 0
     offset = (page - 1) * page_size
 
-    # Get paginated items
-    songs = db.query(SongModel).offset(offset).limit(page_size).all()
+    # Get paginated items (SQL Server requires ORDER BY when using OFFSET/LIMIT)
+    songs = db.query(SongModel).order_by(SongModel.id).offset(offset).limit(page_size).all()
 
     # Convert to schema
     items = [Song.from_orm(song) for song in songs]

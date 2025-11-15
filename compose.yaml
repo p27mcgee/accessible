@@ -1,11 +1,20 @@
 # Database is managed independently via Makefile for dev/test
 # Run: make db-start && make db-init
 # In production, database is external (managed service)
+#
+# Image usage:
+# - By default: uses published images from Docker Hub
+# - Local build: set DOCKER_PULL_POLICY=build to use locally built images
+#   Example: DOCKER_PULL_POLICY=build docker compose --profile both up
 
 services:
   fastDataApi:
     profiles: ["fastapi", "both"]
     image: pmcgee/accessible-fast-data-api:latest
+    build:
+      context: ./fastDataApi
+      dockerfile: Dockerfile
+    pull_policy: ${DOCKER_PULL_POLICY:-always}
     container_name: accessible-fast-data-api
     platform: linux/amd64
     environment:
@@ -28,6 +37,10 @@ services:
   flaskDataApi:
     profiles: ["flask", "both"]
     image: pmcgee/accessible-flask-data-api:latest
+    build:
+      context: ./flaskDataApi
+      dockerfile: Dockerfile
+    pull_policy: ${DOCKER_PULL_POLICY:-always}
     container_name: accessible-flask-data-api
     platform: linux/amd64
     environment:
@@ -49,6 +62,10 @@ services:
 
   nextui:
     image: pmcgee/accessible-nextui:latest
+    build:
+      context: ./nextui
+      dockerfile: Dockerfile
+    pull_policy: ${DOCKER_PULL_POLICY:-always}
     container_name: accessible-nextui
     platform: linux/amd64
     environment:

@@ -60,8 +60,8 @@ def get_all_artists(
     total_pages = ceil(total_items / page_size) if total_items > 0 else 0
     offset = (page - 1) * page_size
 
-    # Get paginated items
-    artists = db.query(ArtistModel).offset(offset).limit(page_size).all()
+    # Get paginated items (SQL Server requires ORDER BY when using OFFSET/LIMIT)
+    artists = db.query(ArtistModel).order_by(ArtistModel.id).offset(offset).limit(page_size).all()
 
     # Build pagination metadata
     pagination = PaginationMetadata(

@@ -289,6 +289,28 @@ All application Docker images are built for **linux/amd64** architecture:
 
 ## Docker Image Management
 
+### Using Published vs. Local Images
+
+**By default**, Docker Compose uses pre-built images from Docker Hub. To use locally built images instead, set the `DOCKER_PULL_POLICY` environment variable:
+
+```bash
+# Use published images from Docker Hub (default)
+docker compose --profile fastapi up -d
+
+# Use locally built images
+DOCKER_PULL_POLICY=build docker compose --profile fastapi up -d
+
+# Or set in .env file
+echo "DOCKER_PULL_POLICY=build" >> .env
+docker compose --profile fastapi up -d
+```
+
+**Options for DOCKER_PULL_POLICY:**
+- `always` (default) - Always pull published images from Docker Hub
+- `build` - Always build images locally from Dockerfile
+- `never` - Use existing local images only (don't pull or build)
+- `missing` - Pull only if image doesn't exist locally
+
 ### Semantic Versioning
 
 Version is defined in `pyproject.toml`:
@@ -301,7 +323,7 @@ version = "1.0.0"  # Edit this to update version
 
 ### Building Images Locally
 
-The project uses pre-built images from Docker Hub by default. To build locally:
+To build images locally (when using `DOCKER_PULL_POLICY=build`):
 
 ```bash
 # Build all services

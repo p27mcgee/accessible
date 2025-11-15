@@ -19,3 +19,23 @@ export interface Artist {
 export interface SongWithArtist extends Song {
   artist_name: string;
 }
+
+/**
+ * Pagination metadata returned by the API
+ */
+export interface PaginationMetadata {
+  page: number;
+  page_size: number;
+  total_items: number;
+  total_pages: number;
+  has_next: boolean;
+  has_prev: boolean;
+}
+
+/**
+ * Paginated response wrapper
+ */
+export interface PaginatedResponse<T> {
+  items: T[];
+  pagination: PaginationMetadata;
+}

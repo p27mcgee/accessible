@@ -10,20 +10,32 @@ describe('API functions', () => {
   });
 
   describe('getSongs', () => {
-    it('fetches songs successfully', async () => {
+    it('fetches songs successfully and extracts items from paginated response', async () => {
       const mockSongs = [
-        { id: 1, title: 'Test Song', artistId: 1, releaseDate: '2024-01-01', url: 'http://test.com' },
+        { id: 1, title: 'Test Song', artist_id: 1, release_date: '2024-01-01', url: 'http://test.com' },
       ];
+
+      const mockPaginatedResponse = {
+        items: mockSongs,
+        pagination: {
+          page: 1,
+          page_size: 100,
+          total_items: 1,
+          total_pages: 1,
+          has_next: false,
+          has_prev: false,
+        },
+      };
 
       (global.fetch as any).mockResolvedValueOnce({
         ok: true,
-        json: async () => mockSongs,
+        json: async () => mockPaginatedResponse,
       });
 
       const result = await getSongs();
       expect(result).toEqual(mockSongs);
       expect(global.fetch).toHaveBeenCalledWith(
-        expect.stringContaining('/v1/songs'),
+        expect.stringContaining('/v1/songs?page_size=100'),
         expect.objectContaining({ cache: 'no-store' })
       );
     });
