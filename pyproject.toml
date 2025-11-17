@@ -1,6 +1,6 @@
 [project]
 name = "accessible"
-version = "1.0.0"
+version = "1.0.1"
 description = "Full-stack application with SQL Server, Python APIs (FastAPI/Flask), and Next.js frontend"
 readme = "README.md"
 requires-python = ">=3.11"
