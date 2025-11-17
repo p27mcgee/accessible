@@ -36,8 +36,9 @@ For local development with PyCharm, VS Code, or other IDEs, set up a Python virt
 
 ### Prerequisites
 
-- Python 3.11 or higher
-- pip (Python package installer)
+- Python 3.11 or higher (tested with Python 3.13)
+- pip (Python package installer, included with Python)
+- On macOS: Homebrew (for installing unixODBC if using Flask)
 
 ### Create Virtual Environment
 
@@ -58,22 +59,36 @@ venv\Scripts\activate
 
 ### Install Dependencies
 
-Install dependencies for the API you want to work on:
+**macOS Prerequisites (Flask only):**
+
+Flask's `pyodbc` dependency requires unixODBC. Install it first if working with Flask:
+
+```bash
+brew install unixodbc
+```
+
+**Install Python packages:**
+
+After activating the virtual environment, install dependencies for the API you want to work on:
 
 **For FastAPI development:**
 ```bash
+# Install dependencies
 pip install --upgrade pip
 pip install -r fastDataApi/requirements.txt
 ```
 
 **For Flask development:**
 ```bash
+# Install dependencies
 pip install --upgrade pip
 pip install -r flaskDataApi/requirements.txt
 ```
 
 **For both APIs:**
 ```bash
+# Install dependencies
+pip install --upgrade pip
 pip install -r fastDataApi/requirements.txt
 pip install -r flaskDataApi/requirements.txt
 ```
@@ -120,9 +135,11 @@ source venv/bin/activate  # macOS/Linux
 # Check Python version
 python --version  # Should be 3.11 or higher
 
-# Verify packages are installed
-pip list | grep fastapi
-pip list | grep flask
+# Verify packages are installed (FastAPI)
+pip list | grep -E "(fastapi|uvicorn|sqlalchemy|pydantic)"
+
+# Verify packages are installed (Flask)
+pip list | grep -E "(flask|pyodbc|sqlalchemy|marshmallow|gunicorn)"
 ```
 
 ### Running Locally (Outside Docker)
