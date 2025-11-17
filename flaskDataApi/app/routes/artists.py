@@ -103,8 +103,8 @@ def get_all_artists():
     # Calculate offset
     offset = (page - 1) * page_size
 
-    # Get paginated items
-    artists = db.session.query(Artist).offset(offset).limit(page_size).all()
+    # Get paginated items (SQL Server requires ORDER BY with OFFSET/LIMIT)
+    artists = db.session.query(Artist).order_by(Artist.id).offset(offset).limit(page_size).all()
 
     # Create paginated response
     response = create_paginated_response(artists, artists_schema, page, page_size, total_items)

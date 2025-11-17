@@ -111,8 +111,8 @@ def get_all_songs():
     # Calculate offset
     offset = (page - 1) * page_size
 
-    # Get paginated items
-    songs = db.session.query(Song).offset(offset).limit(page_size).all()
+    # Get paginated items (SQL Server requires ORDER BY with OFFSET/LIMIT)
+    songs = db.session.query(Song).order_by(Song.id).offset(offset).limit(page_size).all()
 
     # Convert to dict format
     songs_dict = [song_model_to_dict(song) for song in songs]

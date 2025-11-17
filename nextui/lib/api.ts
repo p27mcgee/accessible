@@ -7,6 +7,21 @@ import { Song, Artist } from '@/types';
 const API_BASE_URL = process.env.NEXT_PUBLIC_SONGDATA_API_URL || 'http://localhost:8086';
 
 /**
+ * Paginated API response structure (used by both FastAPI and Flask)
+ */
+interface PaginatedResponse<T> {
+  items: T[];
+  pagination: {
+    page: number;
+    page_size: number;
+    total_items: number;
+    total_pages: number;
+    has_next: boolean;
+    has_prev: boolean;
+  };
+}
+
+/**
  * Fetch all songs from the songdata API
  */
 export async function getSongs(): Promise<Song[]> {
@@ -18,7 +33,8 @@ export async function getSongs(): Promise<Song[]> {
     throw new Error(`Failed to fetch songs: ${response.statusText}`);
   }
 
-  return response.json();
+  const data: PaginatedResponse<Song> = await response.json();
+  return data.items;
 }
 
 /**
