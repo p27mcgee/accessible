@@ -30,6 +30,138 @@ Comprehensive documentation is available in the [`docs/`](docs/) directory:
 
 ---
 
+## Development Setup
+
+For local development with PyCharm, VS Code, or other IDEs, set up a Python virtual environment:
+
+### Prerequisites
+
+- Python 3.11 or higher (tested with Python 3.13)
+- pip (Python package installer, included with Python)
+- On macOS: Homebrew (for installing unixODBC if using Flask)
+
+### Create Virtual Environment
+
+```bash
+# Navigate to project root
+cd /path/to/accessible
+
+# Create virtual environment
+python3 -m venv venv
+
+# Activate virtual environment
+# On macOS/Linux:
+source venv/bin/activate
+
+# On Windows:
+venv\Scripts\activate
+```
+
+### Install Dependencies
+
+**macOS Prerequisites (Flask only):**
+
+Flask's `pyodbc` dependency requires unixODBC. Install it first if working with Flask:
+
+```bash
+brew install unixodbc
+```
+
+**Install Python packages:**
+
+After activating the virtual environment, install dependencies for the API you want to work on:
+
+**For FastAPI development:**
+```bash
+# Install dependencies
+pip install --upgrade pip
+pip install -r fastDataApi/requirements.txt
+```
+
+**For Flask development:**
+```bash
+# Install dependencies
+pip install --upgrade pip
+pip install -r flaskDataApi/requirements.txt
+```
+
+**For both APIs:**
+```bash
+# Install dependencies
+pip install --upgrade pip
+pip install -r fastDataApi/requirements.txt
+pip install -r flaskDataApi/requirements.txt
+```
+
+### PyCharm Configuration
+
+1. **Set Project Interpreter:**
+   - Open PyCharm Settings/Preferences (Cmd+, on macOS, Ctrl+Alt+S on Windows/Linux)
+   - Navigate to: Project: accessible → Python Interpreter
+   - Click the gear icon → Add Interpreter → Add Local Interpreter
+   - Select "Virtualenv Environment" → "Existing"
+   - Browse to: `<project-root>/venv/bin/python` (macOS/Linux) or `<project-root>\venv\Scripts\python.exe` (Windows)
+   - Click OK
+
+2. **Mark Source Roots:**
+   - Right-click on `fastDataApi/app` → Mark Directory as → Sources Root
+   - Right-click on `flaskDataApi/app` → Mark Directory as → Sources Root
+
+3. **Configure Run/Debug:**
+   - PyCharm should now provide autocomplete, type checking, and debugging
+   - You can create run configurations for the APIs if needed
+
+### VS Code Configuration
+
+Create `.vscode/settings.json` in the project root:
+
+```json
+{
+  "python.defaultInterpreterPath": "${workspaceFolder}/venv/bin/python",
+  "python.analysis.extraPaths": [
+    "${workspaceFolder}/fastDataApi",
+    "${workspaceFolder}/flaskDataApi"
+  ]
+}
+```
+
+### Verify Installation
+
+```bash
+# Activate virtual environment first
+source venv/bin/activate  # macOS/Linux
+# or: venv\Scripts\activate  # Windows
+
+# Check Python version
+python --version  # Should be 3.11 or higher
+
+# Verify packages are installed (FastAPI)
+pip list | grep -E "(fastapi|uvicorn|sqlalchemy|pydantic)"
+
+# Verify packages are installed (Flask)
+pip list | grep -E "(flask|pyodbc|sqlalchemy|marshmallow|gunicorn)"
+```
+
+### Running Locally (Outside Docker)
+
+While the project is designed to run in Docker, you can run the APIs locally for debugging:
+
+**FastAPI:**
+```bash
+cd fastDataApi
+uvicorn app.main:app --reload --port 8000
+```
+
+**Flask:**
+```bash
+cd flaskDataApi
+python -m flask --app app run --port 8001 --debug
+```
+
+**Note:** Ensure the SQL Server database is running (via `make db-start`) and accessible at `localhost:1433`.
+
+---
+
 ## Quick Start
 
 ### 1. Start and Initialize Database
