@@ -23,7 +23,7 @@ COPY . .
 
 # Set environment variable for production build
 ENV NEXT_TELEMETRY_DISABLED=1
-ENV NEXT_PUBLIC_SONGDATA_API_URL=http://fastDataApi:8000
+ENV NEXT_PUBLIC_SONGDATA_API_URL=http://flaskDataApi:8001
 
 # Build the application
 RUN npm run build
